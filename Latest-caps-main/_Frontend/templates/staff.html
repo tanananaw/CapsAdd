@@ -1,0 +1,1298 @@
+{% extends "base.html" %}
+{% block page_comment %}Staff Portal{% endblock %}
+{% block title %}MD57 Car Wash & Auto Detailing - Staff Portal{% endblock %}
+
+{% block extra_style %}
+        .main-container {
+            flex: 1;
+            padding: 25px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: smoothFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        /* .page-title / .page-subtitle now shared in style.css */
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 22px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            padding: 18px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .stat-card h4 { margin: 0 0 6px 0; color: var(--text-muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card .value { font-size: 18px; font-weight: bold; color: var(--accent-amber); margin: 0; }
+
+        .card {
+            background: var(--card-bg);
+            padding: 22px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 22px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; min-width: 450px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--border-color); font-size: 13px; white-space: nowrap; }
+        th { background: var(--bg-light); color: var(--text-muted); font-weight: 600; text-transform: uppercase; font-size: 10px; letter-spacing: 0.5px; }
+        tr:hover { background: rgba(37, 99, 235, 0.02); }
+
+        .badge-active-task {
+            background: rgba(37, 99, 235, 0.1);
+            color: #2563eb;
+            border: 1px solid rgba(37, 99, 235, 0.3);
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 11px;
+            display: inline-block;
+        }
+
+        /* --- FLOATING MODAL STYLES (display-toggled, not the fade/open
+           .modal-overlay convention used on other pages) --- */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+        .modal-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-top: 4px solid var(--accent-amber);
+            border-radius: 12px;
+            padding: 24px;
+            width: 100%;
+            max-width: 380px;
+            position: relative;
+            box-sizing: border-box;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+        }
+        .modal-close-btn {
+            position: absolute; top: 12px; right: 16px; background: none; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer;
+        }
+        .modal-close-btn:hover { color: var(--text-bright); }
+
+        .btn-action {
+            background: var(--accent-amber); color: #ffffff; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; width: 100%; transition: opacity 0.2s;
+        }
+        .btn-action:hover { opacity: 0.9; }
+
+        .btn-export {
+            background: var(--bg-light);
+            color: var(--text-main);
+            border: 1px solid var(--border-color);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-export:hover {
+            border-color: var(--accent-amber);
+            background: rgba(37, 99, 235, 0.05);
+            color: var(--accent-amber);
+        }
+
+        /* Shift-roster support cards (Notification Settings, My Availability) -
+           smaller, denser variant of .card's h3/hint pattern so a compact
+           opt-in form doesn't read as heavy as the main data cards. */
+        .roster-support-card h3 {
+            margin: 0 0 4px 0;
+            color: var(--text-bright);
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .roster-support-hint {
+            margin: 0 0 14px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .settings-grid {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .settings-grid > div {
+            flex: 1;
+            min-width: 180px;
+        }
+        .settings-grid label {
+            display: block;
+            font-size: 10px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+            font-weight: 700;
+            letter-spacing: 0.03em;
+        }
+        .settings-grid input {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-bright);
+            font-size: 13px;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        .settings-grid input:focus { border-color: var(--accent-amber); }
+        .settings-grid .btn-action {
+            width: auto;
+            white-space: nowrap;
+            padding: 9px 18px;
+        }
+
+        .unavail-chip-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .unavail-chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(212, 168, 83, 0.1);
+            border: 1px solid rgba(212, 168, 83, 0.35);
+            color: var(--accent-amber);
+            padding: 6px 8px 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .unavail-chip button {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 13px;
+            line-height: 1;
+            padding: 2px;
+            opacity: 0.65;
+            transition: opacity 0.15s;
+        }
+        .unavail-chip button:hover { opacity: 1; }
+
+        /* Compact icon-only "remove from roster" action - replaces a wide
+           text "Remove" button that ate up horizontal space in each roster
+           row on narrow screens. Same destructive-red meaning, just a
+           small round icon button instead of a full-width label, matching
+           the compact-chip convention already used by .unavail-chip
+           button above. */
+        .roster-remove-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            flex-shrink: 0;
+            border-radius: 50%;
+            border: 1px solid rgba(154, 47, 47, 0.35);
+            background: rgba(154, 47, 47, 0.08);
+            color: var(--accent-red);
+            font-size: 11px;
+            cursor: pointer;
+            padding: 0;
+            transition: all 0.15s ease;
+        }
+        .roster-remove-btn:hover {
+            background: var(--accent-red);
+            color: #ffffff;
+        }
+
+        /* Fairness row: how many shifts each staff member has in the
+           currently-displayed 7-day window - a passive signal, not an
+           enforced rule, so admin can see at a glance if scheduling has
+           quietly skewed toward the same few people. */
+        .roster-fairness-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 4px 0 16px 0;
+        }
+        .fairness-chip {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 11px;
+            color: var(--text-main);
+        }
+        .fairness-chip strong { color: var(--text-bright); font-weight: 700; }
+        .fairness-chip .fairness-count {
+            font-weight: 800;
+            color: var(--accent-amber);
+            font-size: 12px;
+        }
+
+        .roster-suggestion-note {
+            margin-top: 10px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .roster-suggestion-note .suggestion-ok { color: var(--accent-green); font-weight: 600; }
+        .roster-suggestion-note .suggestion-warn { color: var(--accent-red); font-weight: 600; }
+
+        @media (max-width: 768px) {
+            .main-container { padding: 15px !important; }
+            .card { padding: 15px !important; }
+            .page-title { font-size: 18px; }
+        }
+{% endblock %}
+
+{% block content %}
+            <h2 class="page-title"><i class="fa-solid fa-users"></i> Staff Performance</h2>
+            <p class="page-subtitle">Monitor completed vehicle counts, attendance records, and real task tracking per washer.</p>
+
+            <!-- STAFF: OWN SHIFT REMINDER -->
+            <div id="myShiftReminder" style="display: none; margin-bottom: 22px; padding: 12px 16px; border-radius: 10px; background: rgba(37, 99, 235, 0.08); border: 1px solid rgba(37, 99, 235, 0.25); color: #1d4ed8; font-size: 13px; font-weight: 600;"></div>
+
+            <!-- Summary Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Total Staff Members</h4>
+                    <p class="value" id="total-staff-count">3 Staff</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Total Vehicles Completed</h4>
+                    <p class="value" id="total-cars-washed">0</p>
+                </div>
+            </div>
+
+            <!-- ACTION TRIGGERS -->
+            <div class="timeclock-trigger-container" style="margin-bottom: 22px; display: flex; flex-direction: row; gap: 12px; flex-wrap: wrap;">
+                <button class="btn-timeclock-trigger" id="btn-timeclock-elem" onclick="checkAdminAction('timeclock')" style="background: var(--bg-light); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; text-align: center; transition: all 0.2s;"><i class="fa-solid fa-stopwatch"></i> Staff Time Clock</button>
+                <button class="btn-timeclock-trigger" id="btn-request-clockin-elem" onclick="requestClockIn()" style="display: none; background: rgba(22, 163, 74, 0.1); color: var(--accent-green); border: 1px solid rgba(22, 163, 74, 0.3); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; text-align: center;"><i class="fa-solid fa-hand"></i> Request Clock-In</button>
+                <button class="btn-timeclock-trigger btn-logs-trigger" id="btn-logs-elem" onclick="checkAdminAction('logs')" style="background: var(--bg-light); color: var(--text-main); border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; text-align: center;"><i class="fa-solid fa-clipboard-list"></i> View Audit Logs</button>
+            </div>
+
+            <!-- STAFF: OWN PENDING REQUEST STATUS -->
+            <div id="ownRequestStatus" style="display: none; margin-bottom: 22px; padding: 12px 16px; border-radius: 10px; background: rgba(147, 51, 234, 0.08); border: 1px solid rgba(147, 51, 234, 0.25); color: #9333ea; font-size: 13px; font-weight: 600;">
+                <i class="fa-solid fa-hand"></i> Your clock-in request is waiting for admin to confirm it.
+            </div>
+
+            <!-- ADMIN: PENDING CLOCK-IN REQUESTS -->
+            <div class="card" id="clockInRequestsCard" style="display: none; border-left: 4px solid #9333ea;">
+                <h3 style="margin-top: 0; color: var(--text-bright); font-size: 15px;"><i class="fa-solid fa-hand"></i> Pending Clock-In Requests</h3>
+                <div id="clock-in-requests-list" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;"></div>
+            </div>
+
+            <!-- AVAILABLE STAFF -->
+            <div class="card" style="border-left: 4px solid var(--accent-green);">
+                <h3 style="margin-top: 0; color: var(--text-bright); font-size: 15px;"><i class="fa-solid fa-circle" style="color: var(--accent-green); font-size: 10px;"></i> Available Washers Today (On-Duty)</h3>
+                <div id="available-staff-list" class="available-staff-container" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px;"></div>
+            </div>
+
+            <!-- STAFF: NOTIFICATION SETTINGS (opt-in only) -->
+            <div class="card roster-support-card" id="notifySettingsCard" style="display: none; border-left: 4px solid #1d4ed8;">
+                <h3><i class="fa-solid fa-bell"></i> Shift Reminder Notifications</h3>
+                <p class="roster-support-hint">Optional - add an email to get reminded the day before a scheduled shift. Leave it blank if you'd rather not be emailed.</p>
+                <div class="settings-grid">
+                    <div>
+                        <label>Email</label>
+                        <input type="email" id="notifyEmailInput" placeholder="e.g. name@gmail.com">
+                    </div>
+                    <button class="btn-action" style="background: #1d4ed8;" onclick="saveNotifyContact()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+                </div>
+            </div>
+
+            <!-- STAFF: MY AVAILABILITY -->
+            <div class="card roster-support-card" id="availabilityCard" style="display: none; border-left: 4px solid var(--accent-amber);">
+                <h3><i class="fa-solid fa-calendar-xmark"></i> My Availability</h3>
+                <p class="roster-support-hint">Mark a day you can't work - admin sees this before building the roster, not after.</p>
+                <div class="settings-grid">
+                    <div>
+                        <label>Date</label>
+                        <input type="date" id="unavailDateInput">
+                    </div>
+                    <div style="flex: 1; min-width: 160px;">
+                        <label>Reason (optional)</label>
+                        <input type="text" id="unavailReasonInput" placeholder="e.g. Personal appointment">
+                    </div>
+                    <button class="btn-action" style="background: var(--accent-amber);" onclick="markUnavailable()"><i class="fa-solid fa-plus"></i> Mark Unavailable</button>
+                </div>
+                <div id="unavailList" class="unavail-chip-list"></div>
+            </div>
+
+            <!-- SHIFT ROSTER -->
+            <div class="card" style="border-left: 4px solid #9333ea;">
+                <h3 style="margin-top: 0; color: var(--text-bright); font-size: 15px;"><i class="fa-solid fa-calendar-days"></i> Upcoming Shift Roster (Next 7 Days)</h3>
+                <div id="rosterFairnessRow" class="roster-fairness-row"></div>
+                <div id="rosterAdminForm" style="display: none; margin: 12px 0; padding: 12px; background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 8px;">
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;">
+                        <div>
+                            <label style="display: block; font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: 700;">Staff</label>
+                            <select id="rosterStaffSelect" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg);" onchange="updateRosterSuggestion()"></select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: 700;">Date</label>
+                            <input type="date" id="rosterDateInput" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-bright);" onchange="updateRosterSuggestion()">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: 700;">Repeat Weekly</label>
+                            <select id="rosterRepeatSelect" style="padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--card-bg);">
+                                <option value="0">No - this day only</option>
+                                <option value="3">+3 weeks</option>
+                                <option value="7">+7 weeks</option>
+                                <option value="11">+11 weeks</option>
+                            </select>
+                        </div>
+                        <div style="flex: 1; min-width: 160px;">
+                            <label style="display: block; font-size: 10px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; font-weight: 700;">Note (optional)</label>
+                            <input type="text" id="rosterNoteInput" placeholder="e.g. Morning shift" style="width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); box-sizing: border-box; background: var(--card-bg); color: var(--text-bright);">
+                        </div>
+                        <button class="btn-action" style="background: var(--accent-green); padding: 9px 16px; white-space: nowrap;" onclick="addStaffShift()"><i class="fa-solid fa-plus"></i> Add to Roster</button>
+                    </div>
+                    <div id="rosterSuggestionNote" class="roster-suggestion-note"></div>
+                </div>
+                <div id="unstaffedBookingDays" style="display: none; margin: 10px 0; padding: 10px 12px; border-radius: 8px; font-size: 12px; line-height: 1.5; background: rgba(220, 38, 38, 0.06); border: 1px solid rgba(220, 38, 38, 0.3); color: var(--text-main);"></div>
+                <div id="rosterList" style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;"></div>
+            </div>
+
+            <!-- ATTENDANCE TABLE -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+                    <h3 style="margin: 0; color: var(--text-bright); font-size: 15px;"><i class="fa-regular fa-clock"></i> Attendance Logs</h3>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: bold;" id="current-date-label"></span>
+                        {% if role == 'admin' %}
+                        <button class="btn-export" onclick="exportAttendanceCSV()" title="Download every attendance record on file as a CSV file"><i class="fa-solid fa-download"></i> Export CSV</button>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Staff Name</th>
+                                <th>Status</th>
+                                <th>Time In</th>
+                                <th>Time Out</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendance-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- WASHERS DIRECTORY & TASK TRACKING TABLE -->
+            <div class="card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 5px;">
+                    <h3 style="margin: 0; color: var(--text-bright); font-size: 15px;">Washers Directory & Task Tracking</h3>
+                    <button class="btn-export" onclick="exportWashersCSV()"><i class="fa-solid fa-download"></i> Export CSV</button>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Washer Name</th>
+                                <th>Role</th>
+                                <th>Completed</th>
+                                <th>In Progress</th>
+                            </tr>
+                        </thead>
+                        <tbody id="staff-table-body"></tbody>
+                    </table>
+                </div>
+                <p id="unassigned-note" style="display: none; margin: 10px 0 0 0; color: var(--text-muted); font-size: 11px; font-style: italic;"></p>
+            </div>
+{% endblock %}
+
+{% block modals %}
+    <!-- TIME IN / OUT MODAL -->
+    <div id="timeclock-modal" class="modal-overlay" onclick="handleOutsideClick(event)">
+        <div class="modal-card">
+            <button class="modal-close-btn" onclick="toggleTimeClockModal(false)">&times;</button>
+            <h3 style="margin-top: 0; color: var(--text-bright); font-size: 16px;"><i class="fa-solid fa-stopwatch"></i> Staff Time Clock</h3>
+            <p style="color: var(--text-muted); font-size: 11px; margin-bottom: 12px;">Record a time-in or time-out for the selected staff member.</p>
+
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div id="timeclock-select-wrap">
+                    <label style="font-size: 10px; color: var(--text-muted); display: block; margin-bottom: 3px; text-transform: uppercase; font-weight: 600;">Select Staff:</label>
+                    <select id="self-staff-select" class="form-control" style="background: var(--bg-light); border: 1px solid var(--border-color); color: var(--text-main); padding: 9px 12px; border-radius: 6px; font-size: 12px; width: 100%; outline: none;"></select>
+                </div>
+                <div style="display: flex; gap: 8px; margin-top: 5px;">
+                    <button class="btn-action" style="background: var(--accent-green);" onclick="staffSelfAction('in')"><i class="fa-solid fa-circle-check"></i> Time In</button>
+                    <button class="btn-action" style="background: var(--accent-amber);" onclick="staffSelfAction('out')"><i class="fa-solid fa-right-from-bracket"></i> Time Out</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AUDIT LOGS MODAL -->
+    <div id="audit-logs-modal" class="modal-overlay" onclick="handleLogsOutsideClick(event)">
+        <div class="modal-card" style="max-width: 450px;">
+            <button class="modal-close-btn" onclick="toggleAuditLogsModal(false)">&times;</button>
+            <h3 style="margin-top: 0; color: var(--text-bright); font-size: 16px;"><i class="fa-solid fa-clipboard-list"></i> System Activity Audit Trail</h3>
+            <p style="color: var(--text-muted); font-size: 11px; margin-bottom: 8px;">History of events (Admin View) - real server-side log, shared across every device.</p>
+
+            <input type="text" id="auditLogSearchInput" placeholder="Search by user or action..." oninput="filterAuditLogs()" style="width: 100%; box-sizing: border-box; margin-bottom: 8px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-light); color: var(--text-main); font-size: 12px; outline: none;">
+
+            <div class="log-table-container" style="overflow-y: auto; max-height: 40vh; margin-top: 8px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audit-logs-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        applyRolePermissions();
+        await loadStaffList();
+        setupTimeClockUI();
+
+        await refreshAttendance();
+        loadClockInRequests();
+        loadStaffData();
+        renderAuditLogs();
+        setupRosterForm();
+        loadUnavailability();
+        loadStaffShifts();
+        loadNotifyContact();
+        if (CURRENT_USER.role === 'staff') renderUnavailList();
+
+        onLiveUpdate(() => {
+            refreshAttendance();
+            loadClockInRequests();
+            loadStaffData();
+            loadUnavailability();
+            loadStaffShifts();
+        });
+    });
+
+    // This page's modals are display-toggled (.modal-overlay via
+    // style.display, not classList), so it needs its own click-outside
+    // handler instead of the common.js default.
+    // No more nav-dropdown-closing logic here - the "Menu" dropdown is
+    // gone entirely, replaced by the always-visible sidebar.
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal-overlay')) {
+            event.target.style.display = 'none';
+        }
+    }
+
+    function applyRolePermissions() {
+        const role = CURRENT_USER.role;
+        const logsBtn = document.getElementById('btn-logs-elem');
+        const timeclockBtn = document.getElementById('btn-timeclock-elem');
+        const requestBtn = document.getElementById('btn-request-clockin-elem');
+        const requestsCard = document.getElementById('clockInRequestsCard');
+        const rosterForm = document.getElementById('rosterAdminForm');
+        const notifyCard = document.getElementById('notifySettingsCard');
+        const availabilityCard = document.getElementById('availabilityCard');
+
+        if (role === 'admin') {
+            if (logsBtn) logsBtn.style.display = 'block';
+            if (timeclockBtn) timeclockBtn.style.display = 'block';
+            if (requestBtn) requestBtn.style.display = 'none';
+            if (requestsCard) requestsCard.style.display = 'block';
+            if (rosterForm) rosterForm.style.display = 'block';
+            // Admin isn't a washer - these are for staff to manage their own
+            // reminder contact and availability, not something admin sets.
+            if (notifyCard) notifyCard.style.display = 'none';
+            if (availabilityCard) availabilityCard.style.display = 'none';
+        } else {
+            if (logsBtn) logsBtn.style.display = 'none';
+            // Staff can no longer clock themselves in/out directly - only
+            // admin records attendance (see checkAdminAction('timeclock')).
+            // Staff can still ask, via requestClockIn() below.
+            if (timeclockBtn) timeclockBtn.style.display = 'none';
+            if (requestBtn) requestBtn.style.display = 'block';
+            if (requestsCard) requestsCard.style.display = 'none';
+            // Staff view the roster read-only - only admin schedules shifts.
+            if (rosterForm) rosterForm.style.display = 'none';
+            if (notifyCard) notifyCard.style.display = 'block';
+            if (availabilityCard) availabilityCard.style.display = 'block';
+        }
+    }
+
+    function requestClockIn() {
+        fetch('/api/staff-clock-in-request', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                showToast('Request Sent', data.message, 'success');
+            } else {
+                showToast('Error', data.message || 'Could not send clock-in request.', 'error');
+            }
+            refreshAttendance();
+        })
+        .catch(() => showToast('Error', 'Connection error while sending request.', 'error'));
+    }
+
+    function renderOwnRequestStatus() {
+        const box = document.getElementById('ownRequestStatus');
+        if (!box || CURRENT_USER.role !== 'staff') { if (box) box.style.display = 'none'; return; }
+        const record = attendanceState[CURRENT_USER.user_id];
+        box.style.display = (record && record.status === 'Pending') ? 'block' : 'none';
+    }
+
+    function loadClockInRequests() {
+        if (CURRENT_USER.role !== 'admin') return;
+        fetch('/api/clock-in-requests')
+            .then(res => res.json())
+            .then(data => {
+                const list = (data.status === 'success' && Array.isArray(data.data)) ? data.data : [];
+                renderClockInRequests(list);
+            })
+            .catch(() => renderClockInRequests([]));
+    }
+
+    function renderClockInRequests(list) {
+        const container = document.getElementById('clock-in-requests-list');
+        if (!container) return;
+        if (list.length === 0) {
+            container.innerHTML = `<p style="color: var(--text-muted); font-style: italic; margin: 0; font-size: 12px;">No pending requests right now.</p>`;
+            return;
+        }
+        container.innerHTML = list.map(req => `
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; padding: 10px 14px; background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 8px;">
+                <span style="font-size: 13px; font-weight: 700; color: var(--text-bright);">${escapeHtml(req.staff_name)} <span style="font-weight: 500; color: var(--text-muted);">requested at ${escapeHtml(req.time_in)}</span></span>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-action" style="background: var(--accent-green); padding: 6px 12px; font-size: 11px;" onclick="confirmClockIn(${Number(req.staff_user_id)})"><i class="fa-solid fa-circle-check"></i> Confirm</button>
+                    <button class="btn-action" style="background: var(--accent-red); padding: 6px 12px; font-size: 11px;" onclick="rejectClockIn(${Number(req.staff_user_id)})"><i class="fa-solid fa-xmark"></i> Reject</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function confirmClockIn(staffUserId) {
+        fetch('/api/confirm-clock-in', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ staff_user_id: staffUserId }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            showToast(data.status === 'success' ? 'Confirmed' : 'Error', data.message, data.status === 'success' ? 'success' : 'error');
+            loadClockInRequests();
+            refreshAttendance();
+        })
+        .catch(() => showToast('Error', 'Connection error while confirming clock-in.', 'error'));
+    }
+
+    function rejectClockIn(staffUserId) {
+        fetch('/api/reject-clock-in', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ staff_user_id: staffUserId }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            showToast(data.status === 'success' ? 'Rejected' : 'Error', data.message, data.status === 'success' ? 'success' : 'error');
+            loadClockInRequests();
+            refreshAttendance();
+        })
+        .catch(() => showToast('Error', 'Connection error while rejecting clock-in.', 'error'));
+    }
+
+    // --- SHIFT ROSTER (forward-looking schedule, item 26) ---
+    let staffShiftsData = [];
+
+    function setupRosterForm() {
+        const dateInput = document.getElementById('rosterDateInput');
+        if (dateInput) dateInput.value = getTodayDateStr();
+
+        const select = document.getElementById('rosterStaffSelect');
+        if (select) {
+            select.innerHTML = '';
+            staffListData.forEach(staff => {
+                let opt = document.createElement('option');
+                opt.value = staff.id; opt.innerText = staff.name;
+                select.appendChild(opt);
+            });
+        }
+    }
+
+    // Admin-only warning: days customers have already booked with nobody
+    // available on the roster - schedule someone before those bookings
+    // get moved by the staff-absence rule.
+    function loadUnstaffedBookingDays() {
+        const box = document.getElementById('unstaffedBookingDays');
+        if (!box || CURRENT_USER.role !== 'admin') return;
+        fetch('/api/unstaffed-booking-days')
+            .then(res => res.json())
+            .then(data => {
+                const days = (data.status === 'success' && Array.isArray(data.data)) ? data.data : [];
+                box.style.display = days.length ? 'block' : 'none';
+                box.innerHTML = days.length
+                    ? `<strong><i class="fa-solid fa-triangle-exclamation" style="color: var(--accent-red);"></i> Bookings with no staff scheduled:</strong> ` +
+                      days.map(d => `${escapeHtml(d.date)} (${Number(d.bookings)} booking${d.bookings === 1 ? '' : 's'})`).join(', ') +
+                      `. Add someone to the roster, or these customers will be moved to another day.`
+                    : '';
+            })
+            .catch(() => { box.style.display = 'none'; });
+    }
+
+    function loadStaffShifts() {
+        fetch('/api/staff-shifts')
+            .then(res => res.json())
+            .then(data => {
+                staffShiftsData = (data.status === 'success' && Array.isArray(data.data)) ? data.data : [];
+                loadUnstaffedBookingDays();
+                renderRoster();
+                renderMyShiftReminder();
+                renderRosterFairness();
+                updateRosterSuggestion();
+            })
+            .catch(() => { staffShiftsData = []; renderRoster(); renderMyShiftReminder(); renderRosterFairness(); });
+    }
+
+    // How many shifts each staff member has in the currently-displayed
+    // window - a passive signal, not an enforced rule, so admin can see at
+    // a glance if scheduling has quietly skewed toward the same few people.
+    function renderRosterFairness() {
+        const container = document.getElementById('rosterFairnessRow');
+        if (!container) return;
+        if (CURRENT_USER.role !== 'admin' || staffShiftsData.length === 0) { container.innerHTML = ''; return; }
+
+        const counts = {};
+        staffShiftsData.forEach(s => { counts[s.staff_name] = (counts[s.staff_name] || 0) + 1; });
+        const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+        container.innerHTML = entries.map(([name, count]) => `
+            <div class="fairness-chip"><strong>${escapeHtml(name)}</strong> <span class="fairness-count">${count}</span> shift${count === 1 ? '' : 's'} this window</div>
+        `).join('');
+    }
+
+    // Shared by both the staff self-service list (own entries only, per the
+    // backend's role-based scoping) and admin's cross-reference used by
+    // updateRosterSuggestion() below - same endpoint, same shape, the
+    // backend decides what each role is allowed to see.
+    let unavailabilityData = [];
+
+    function loadUnavailability() {
+        fetch('/api/staff-unavailability')
+            .then(res => res.json())
+            .then(data => {
+                unavailabilityData = (data.status === 'success' && Array.isArray(data.data)) ? data.data : [];
+                if (CURRENT_USER.role === 'staff') renderUnavailList();
+                updateRosterSuggestion();
+            })
+            .catch(() => {
+                unavailabilityData = [];
+                if (CURRENT_USER.role === 'staff') renderUnavailList();
+            });
+    }
+
+    function renderUnavailList() {
+        const container = document.getElementById('unavailList');
+        if (!container) return;
+        if (unavailabilityData.length === 0) {
+            container.innerHTML = `<p style="color: var(--text-muted); font-style: italic; margin: 10px 0 0; font-size: 12px;">No dates marked unavailable.</p>`;
+            return;
+        }
+        container.innerHTML = unavailabilityData.map(u => `
+            <div class="unavail-chip">
+                <span>${escapeHtml(u.unavailable_date)}${u.reason ? ' - ' + escapeHtml(u.reason) : ''}</span>
+                <button onclick="removeUnavailability('${escapeJsString(u.unavailable_date)}')" title="Remove"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        `).join('');
+    }
+
+    function markUnavailable() {
+        const date = document.getElementById('unavailDateInput').value;
+        const reason = document.getElementById('unavailReasonInput').value.trim();
+        if (!date) { showToast('Required', 'Pick a date.', 'error'); return; }
+
+        fetch('/api/staff-unavailability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ unavailable_date: date, reason: reason }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            showToast(data.status === 'success' ? 'Marked' : 'Error', data.message, data.status === 'success' ? 'success' : 'error');
+            if (data.status === 'success') {
+                document.getElementById('unavailReasonInput').value = '';
+                loadUnavailability();
+            }
+        })
+        .catch(() => showToast('Error', 'Connection error.', 'error'));
+    }
+
+    function removeUnavailability(date) {
+        fetch('/api/delete-staff-unavailability', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ unavailable_date: date }),
+        })
+        .then(res => res.json())
+        .then(() => loadUnavailability())
+        .catch(() => showToast('Error', 'Connection error.', 'error'));
+    }
+
+    function loadNotifyContact() {
+        if (CURRENT_USER.role !== 'staff') return;
+        fetch('/api/my-notify-contact')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status !== 'success') return;
+                document.getElementById('notifyEmailInput').value = data.notify_email || '';
+            })
+            .catch(() => {});
+    }
+
+    function saveNotifyContact() {
+        const email = document.getElementById('notifyEmailInput').value.trim();
+        fetch('/api/update-notify-contact', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ notify_email: email }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            showToast(data.status === 'success' ? 'Saved' : 'Error', data.message, data.status === 'success' ? 'success' : 'error');
+        })
+        .catch(() => showToast('Error', 'Connection error while saving.', 'error'));
+    }
+
+    // Admin-only: cross-references the AI-recommended headcount for this
+    // weekday (/api/analytics-metrics), the real MCDA staff ranking
+    // (/api/staff-real-metrics + /api/staff-evaluation - the same engine
+    // that powers the Manager Analytics leaderboard), and who's already
+    // scheduled/unavailable that day, into one actionable line instead of
+    // admin having to cross-check three separate pages by hand.
+    //
+    // rosterSuggestionRequestId guards against a real race: selecting a
+    // staff member fires this async function, then immediately changing
+    // the date fires it again before the first call's fetches have
+    // resolved - without this, the slower first call could still finish
+    // later and overwrite the note with its now-stale answer. Only the
+    // most recently *started* call is allowed to write the DOM.
+    let rosterSuggestionRequestId = 0;
+
+    async function updateRosterSuggestion() {
+        const noteEl = document.getElementById('rosterSuggestionNote');
+        if (!noteEl || CURRENT_USER.role !== 'admin') return;
+
+        const requestId = ++rosterSuggestionRequestId;
+        const selectedStaffId = Number(document.getElementById('rosterStaffSelect').value);
+        const selectedStaff = (staffListData.find(s => s.id === selectedStaffId) || {}).name;
+        const selectedDate = document.getElementById('rosterDateInput').value;
+        if (!selectedDate) { noteEl.innerHTML = ''; return; }
+
+        const conflict = unavailabilityData.find(u => u.staff_user_id === selectedStaffId && u.unavailable_date === selectedDate);
+        if (selectedStaff && conflict) {
+            noteEl.innerHTML = `<span class="suggestion-warn"><i class="fa-solid fa-triangle-exclamation"></i> ${escapeHtml(selectedStaff)} marked themselves unavailable that day${conflict.reason ? ' (' + escapeHtml(conflict.reason) + ')' : ''}.</span>`;
+            return;
+        }
+
+        try {
+            const [metricsData, analyticsData] = await Promise.all([
+                fetch('/api/staff-real-metrics').then(r => r.json()),
+                fetch('/api/analytics-metrics').then(r => r.json()),
+            ]);
+            if (requestId !== rosterSuggestionRequestId) return; // a newer call has already started
+            if (metricsData.status !== 'success' || analyticsData.status !== 'success') { noteEl.innerHTML = ''; return; }
+
+            const jsWeekday = new Date(selectedDate + 'T00:00:00').getDay(); // 0=Sun..6=Sat
+            const labelIdx = jsWeekday === 0 ? 6 : jsWeekday - 1; // demand_chart labels run Mon..Sun
+            const recommended = analyticsData.demand_chart.recommended[labelIdx] || 0;
+            const sampleDays = analyticsData.demand_chart.sample_days[labelIdx] || 0;
+
+            const scheduledNames = staffShiftsData.filter(s => s.shift_date === selectedDate).map(s => s.staff_name);
+            const unavailableNames = unavailabilityData.filter(u => u.unavailable_date === selectedDate).map(u => u.staff_name);
+
+            const evalRes = await fetch('/api/staff-evaluation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    staff_metrics: metricsData.data.map(s => ({ name: s.name, service_speed: s.speed || 0, completion: s.completion || 0, feedback: s.rating || 0 })),
+                }),
+            }).then(r => r.json());
+
+            if (requestId !== rosterSuggestionRequestId) return; // a newer call has already started
+
+            const ranked = (evalRes.status === 'success' ? evalRes.ranked_productivity_report : [])
+                .filter(r => !scheduledNames.includes(r.name) && !unavailableNames.includes(r.name));
+
+            const stillNeeded = Math.max(0, recommended - scheduledNames.length);
+
+            if (sampleDays < 2) {
+                noteEl.innerHTML = `<span style="color: var(--text-muted);"><i class="fa-solid fa-circle-info"></i> Not enough historical data yet for a confident recommendation on this weekday.</span>`;
+            } else if (stillNeeded === 0) {
+                noteEl.innerHTML = `<span class="suggestion-ok"><i class="fa-solid fa-circle-check"></i> ${scheduledNames.length} of ~${recommended} AI-recommended staff already scheduled for this day.</span>`;
+            } else {
+                const suggestions = ranked.slice(0, stillNeeded).map(r => escapeHtml(r.name)).join(', ') || 'no one else currently available';
+                noteEl.innerHTML = `<span style="color: var(--text-main);"><i class="fa-solid fa-lightbulb" style="color: var(--accent-amber);"></i> ~${recommended} recommended for this day, ${scheduledNames.length} scheduled so far. Top performers still available: <strong>${suggestions}</strong>.</span>`;
+            }
+        } catch (e) {
+            if (requestId === rosterSuggestionRequestId) noteEl.innerHTML = '';
+        }
+    }
+
+    function renderRoster() {
+        const container = document.getElementById('rosterList');
+        if (!container) return;
+        const isAdmin = CURRENT_USER.role === 'admin';
+
+        if (staffShiftsData.length === 0) {
+            container.innerHTML = `<p style="color: var(--text-muted); font-style: italic; margin: 0; font-size: 12px;">No shifts scheduled for the next 7 days.</p>`;
+            return;
+        }
+
+        let byDate = {};
+        staffShiftsData.forEach(shift => {
+            if (!byDate[shift.shift_date]) byDate[shift.shift_date] = [];
+            byDate[shift.shift_date].push(shift);
+        });
+
+        const dateLabel = (d) => new Date(d + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+        container.innerHTML = Object.keys(byDate).sort().map(date => `
+            <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 14px;">
+                <div style="font-size: 12px; font-weight: 700; color: var(--text-bright); margin-bottom: 6px;">${escapeHtml(dateLabel(date))}</div>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    ${byDate[date].map(shift => `
+                        <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px 10px;">
+                            <span style="font-size: 12px; color: var(--text-main); min-width: 0; word-break: break-word;"><i class="fa-solid fa-user-gear"></i> ${escapeHtml(shift.staff_name)}${shift.shift_note ? ` <span style="color: var(--text-muted);">- ${escapeHtml(shift.shift_note)}</span>` : ''}</span>
+                            ${isAdmin ? `<button class="roster-remove-btn" title="Remove from roster" aria-label="Remove ${escapeHtml(shift.staff_name)} from ${escapeHtml(shift.shift_date)}" onclick="removeStaffShift(${Number(shift.staff_user_id)}, '${escapeJsString(shift.staff_name)}', '${escapeJsString(shift.shift_date)}')"><i class="fa-solid fa-xmark"></i></button>` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function renderMyShiftReminder() {
+        const box = document.getElementById('myShiftReminder');
+        if (!box) return;
+        if (CURRENT_USER.role !== 'staff') { box.style.display = 'none'; return; }
+
+        const today = getTodayDateStr();
+        const tomorrow = getDateStrOffset(1);
+        const mine = staffShiftsData.filter(s => s.staff_user_id === CURRENT_USER.user_id);
+
+        const todayShift = mine.find(s => s.shift_date === today);
+        const tomorrowShift = mine.find(s => s.shift_date === tomorrow);
+
+        if (todayShift) {
+            box.style.display = 'block';
+            box.innerText = `You're scheduled to work TODAY${todayShift.shift_note ? ' - ' + todayShift.shift_note : ''}.`;
+        } else if (tomorrowShift) {
+            box.style.display = 'block';
+            box.innerText = `You're scheduled to work TOMORROW${tomorrowShift.shift_note ? ' - ' + tomorrowShift.shift_note : ''}.`;
+        } else {
+            box.style.display = 'none';
+        }
+    }
+
+    function addStaffShift() {
+        const staffUserId = Number(document.getElementById('rosterStaffSelect').value);
+        const shiftDate = document.getElementById('rosterDateInput').value;
+        const shiftNote = document.getElementById('rosterNoteInput').value.trim();
+
+        if (!staffUserId || !shiftDate) {
+            showToast('Required', 'Select a staff member and date.', 'error');
+            return;
+        }
+
+        fetch('/api/staff-shifts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                staff_user_id: staffUserId, shift_date: shiftDate, shift_note: shiftNote,
+                repeat_weeks: Number(document.getElementById('rosterRepeatSelect').value),
+            }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            showToast(data.status === 'success' ? 'Scheduled' : 'Error', data.message, data.status === 'success' ? 'success' : 'error');
+            if (data.status === 'success') {
+                document.getElementById('rosterNoteInput').value = '';
+                loadStaffShifts();
+            }
+        })
+        .catch(() => showToast('Error', 'Connection error while scheduling shift.', 'error'));
+    }
+
+    function removeStaffShift(staffUserId, staffName, shiftDate) {
+        if (!confirm(`Remove ${staffName} from the roster for ${shiftDate}?`)) return;
+        fetch('/api/delete-staff-shift', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ staff_user_id: staffUserId, shift_date: shiftDate }),
+        })
+        .then(res => res.json())
+        .then(data => {
+            showToast(data.status === 'success' ? 'Removed' : 'Error', data.message, data.status === 'success' ? 'success' : 'error');
+            loadStaffShifts();
+        })
+        .catch(() => showToast('Error', 'Connection error while removing shift.', 'error'));
+    }
+
+    function checkAdminAction(actionType) {
+        const role = CURRENT_USER.role;
+        if (role !== 'admin') {
+            showToast('Access Denied', 'Administrator privileges required for this action.', 'error');
+            return;
+        }
+        if (actionType === 'logs') toggleAuditLogsModal(true);
+        if (actionType === 'timeclock') toggleTimeClockModal(true);
+    }
+
+    // getTodayDateStr() (common.js) - NOT toISOString(), which is UTC and
+    // used to make this page's own "who's on duty" disagree with the
+    // server-computed Active Staff KPI for roughly a third of every day
+    // (midnight-8AM local, PH is UTC+8) - see common.js's comment on
+    // getTodayDateStr for the full explanation. This is the exact value
+    // that decides which day's attendance /api/get-staff-attendance
+    // fetches and renderAvailableStaff() renders below.
+    const currentDateStr = getTodayDateStr();
+    document.getElementById('current-date-label').innerText = new Date().toLocaleDateString('en-US', {
+        weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+    });
+
+    // Real seeded staff accounts (role='staff'), loaded from the server -
+    // replaces the old hardcoded fictional roster with fake PINs.
+    let staffListData = [];
+
+    async function loadStaffList() {
+        try {
+            const res = await fetch('/api/get-staff-list');
+            const data = await res.json();
+            if (data.status === 'success' && Array.isArray(data.data)) {
+                staffListData = data.data.map(s => ({ id: s.user_id, name: s.name, role: 'Staff' }));
+            }
+        } catch (err) {
+            console.error('Failed to load staff list:', err);
+        }
+
+        document.getElementById('total-staff-count').innerText = `${staffListData.length} Staff`;
+    }
+
+    // Admin-only time clock: a dropdown of the real staff accounts.
+    function setupTimeClockUI() {
+        const selectEl = document.getElementById('self-staff-select');
+        selectEl.innerHTML = '';
+        staffListData.forEach(staff => {
+            let opt = document.createElement('option');
+            opt.value = staff.id; opt.innerText = staff.name;
+            selectEl.appendChild(opt);
+        });
+    }
+
+    // Real server-side audit trail (utils.log_activity, written on every
+    // login/booking/cancellation/feedback/staff action across the whole
+    // system - not just the two kinds of event this page used to log to
+    // localStorage, which only that one browser ever saw). No client-side
+    // logActivity()/clearAuditLogs() needed anymore - the backend logs
+    // attendance actions itself now (see staff_api.py), and an audit
+    // trail that the people being audited can erase isn't much of one.
+    let allAuditLogs = [];
+
+    async function renderAuditLogs() {
+        const tbody = document.getElementById('audit-logs-table-body');
+        if (!tbody) return;
+
+        try {
+            const res = await fetch('/api/get-audit-logs?limit=100');
+            const data = await res.json();
+            allAuditLogs = (data.status === 'success' && Array.isArray(data.data)) ? data.data : [];
+        } catch (err) {
+            console.error('Failed to load audit logs:', err);
+            allAuditLogs = [];
+        }
+
+        const searchInput = document.getElementById('auditLogSearchInput');
+        if (searchInput) searchInput.value = '';
+        renderAuditLogRows(allAuditLogs);
+    }
+
+    function renderAuditLogRows(logs) {
+        const tbody = document.getElementById('audit-logs-table-body');
+        tbody.innerHTML = '';
+        if (logs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">${allAuditLogs.length === 0 ? 'No activity logs.' : 'No log entries match your search.'}</td></tr>`;
+            return;
+        }
+        logs.forEach(log => {
+            tbody.innerHTML += `<tr><td style="font-size: 11px; color: var(--text-muted);">${escapeHtml(log.timestamp)}</td><td><span class="log-badge-staff" style="background: rgba(37, 99, 235, 0.1); color: var(--accent-amber); padding: 3px 6px; border-radius: 4px; font-size: 9px; font-weight: bold;">${escapeHtml(log.username)}</span></td><td style="font-size: 12px;">${escapeHtml(log.action)}</td></tr>`;
+        });
+    }
+
+    // Filters the 100 most-recent entries already fetched - matches the
+    // same "find a specific past event" need as the other list search
+    // boxes on this site, without needing a dedicated backend search
+    // endpoint for what's already a capped, in-memory list.
+    function filterAuditLogs() {
+        let query = (document.getElementById('auditLogSearchInput').value || '').trim().toLowerCase();
+        if (!query) {
+            renderAuditLogRows(allAuditLogs);
+            return;
+        }
+        let filtered = allAuditLogs.filter(log =>
+            (log.username || '').toLowerCase().includes(query) ||
+            (log.action || '').toLowerCase().includes(query) ||
+            (log.timestamp || '').toLowerCase().includes(query)
+        );
+        renderAuditLogRows(filtered);
+    }
+
+    function toggleAuditLogsModal(show) { document.getElementById('audit-logs-modal').style.display = show ? 'flex' : 'none'; if(show) renderAuditLogs(); }
+    function toggleTimeClockModal(show) { document.getElementById('timeclock-modal').style.display = show ? 'flex' : 'none'; }
+    function handleOutsideClick(event) { if (event.target === document.getElementById('timeclock-modal')) toggleTimeClockModal(false); }
+    function handleLogsOutsideClick(event) { if (event.target === document.getElementById('audit-logs-modal')) toggleAuditLogsModal(false); }
+
+    const ABSENT_RECORD = { status: "Absent", timeIn: "--:--", timeOut: "--:--" };
+
+    function defaultAttendanceState() {
+        let state = {};
+        staffListData.forEach(staff => { state[staff.id] = { ...ABSENT_RECORD }; });
+        return state;
+    }
+
+    // SQLite (via /api/get-staff-attendance) is now the single source of truth.
+    // No more localStorage caching of attendance state.
+    async function loadAttendanceFromServer() {
+        let state = defaultAttendanceState();
+        try {
+            const res = await fetch(`/api/get-staff-attendance?date_str=${currentDateStr}`);
+            const data = await res.json();
+            if (data.status === 'success' && Array.isArray(data.data)) {
+                data.data.forEach(record => {
+                    let staff = staffListData.find(s => s.id === record.staff_user_id);
+                    if (staff) {
+                        state[staff.id] = {
+                            status: record.status || "Absent",
+                            timeIn: record.time_in || "--:--",
+                            timeOut: record.time_out || "--:--"
+                        };
+                    }
+                });
+            }
+        } catch (err) {
+            console.error("Failed to load attendance from server:", err);
+        }
+        return state;
+    }
+
+    let attendanceState = defaultAttendanceState();
+
+    async function refreshAttendance() {
+        attendanceState = await loadAttendanceFromServer();
+        renderAttendanceTable();
+        renderAvailableStaff();
+        renderOwnRequestStatus();
+    }
+    let globalStaffStats = {};
+
+    async function staffSelfAction(type) {
+        const staffId = document.getElementById('self-staff-select').value;
+        const selectedStaff = staffListData.find(s => s.id == staffId);
+        if (!selectedStaff) { showToast('Error', 'Select a staff member.', 'error'); return; }
+
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+        const current = attendanceState[selectedStaff.id] || ABSENT_RECORD;
+
+        let status, timeIn, timeOut;
+        if (type === 'in') {
+            timeIn = timeString;
+            timeOut = "--:--";
+            let isLate = now.getHours() > 8 || (now.getHours() === 8 && now.getMinutes() > 15);
+            status = isLate ? "Late" : "Present";
+        } else {
+            timeIn = current.timeIn;
+            timeOut = timeString;
+            status = current.status;
+        }
+
+        try {
+            const res = await fetch('/api/staff-attendance', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    staff_user_id: selectedStaff.id,
+                    date_str: currentDateStr,
+                    status: status,
+                    time_in: timeIn,
+                    time_out: timeOut
+                })
+            });
+            const data = await res.json();
+            if (data.status !== 'success') {
+                showToast('Error', data.message || 'Failed to record attendance.', 'error');
+                return;
+            }
+        } catch (err) {
+            showToast('Error', 'Connection error while recording attendance.', 'error');
+            return;
+        }
+
+        showToast('Success', type === 'in'
+            ? `Time-In recorded for ${selectedStaff.name}.`
+            : `Time-Out recorded for ${selectedStaff.name}.`);
+
+        toggleTimeClockModal(false);
+        await refreshAttendance();
+    }
+
+    function renderAvailableStaff() {
+        const availableContainer = document.getElementById('available-staff-list');
+        availableContainer.innerHTML = '';
+        let availableStaffNames = [];
+
+        staffListData.forEach(staff => {
+            let record = attendanceState[staff.id];
+            if (record && (record.status === "Present" || record.status === "Late") && record.timeOut === "--:--") {
+                availableStaffNames.push(staff.name);
+                availableContainer.innerHTML += `<div class="available-badge" style="background: rgba(22, 163, 74, 0.1); border: 1px solid rgba(22, 163, 74, 0.3); color: var(--accent-green); padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; display: flex; align-items: center; gap: 6px;"><span class="dot" style="width: 6px; height: 6px; background: var(--accent-green); border-radius: 50%; display: inline-block; box-shadow: 0 0 6px var(--accent-green);"></span>${escapeHtml(staff.name)} (${escapeHtml(staff.role)})</div>`;
+            }
+        });
+        if (availableStaffNames.length === 0) availableContainer.innerHTML = `<p style="color: var(--text-muted); font-style: italic; margin: 0; font-size: 12px;">No staff on-duty.</p>`;
+    }
+
+    function renderAttendanceTable() {
+        const tbody = document.getElementById('attendance-table-body');
+        tbody.innerHTML = '';
+        if (staffListData.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 16px;">No staff accounts yet.</td></tr>';
+            return;
+        }
+        staffListData.forEach(staff => {
+            let record = attendanceState[staff.id] || ABSENT_RECORD;
+            let badgeStyle = record.status === "Present" ? "background: rgba(22, 163, 74, 0.1); color: var(--accent-green); border: 1px solid rgba(22, 163, 74, 0.3);"
+                : record.status === "Late" ? "background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.3);"
+                : record.status === "Pending" ? "background: rgba(147, 51, 234, 0.1); color: #9333ea; border: 1px solid rgba(147, 51, 234, 0.3);"
+                : "background: rgba(220, 38, 38, 0.1); color: var(--accent-red); border: 1px solid rgba(220, 38, 38, 0.3);";
+            tbody.innerHTML += `<tr><td><strong>${escapeHtml(staff.name)}</strong></td><td><span class="attendance-badge" style="${badgeStyle} padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: bold; display: inline-block;">${escapeHtml(record.status)}</span></td><td>${escapeHtml(record.timeIn)}</td><td>${escapeHtml(record.timeOut)}</td></tr>`;
+        });
+    }
+
+    // Real task tracking per washer - no commission/bonus/payout involved.
+    // "Completed" comes from /api/get-ready (car.washer is set by
+    // api_start_service when a staff member, not an admin, starts the
+    // job - see database.py's assigned_staff_id). "In Progress" comes from
+    // /api/get-queue filtered to jobs actually being worked right now, so
+    // this table reflects live, real task state rather than a static count.
+    async function loadStaffData() {
+        let readyList = [];
+        let queueList = [];
+        try {
+            const [readyRes, queueRes] = await Promise.all([
+                fetch('/api/get-ready'),
+                fetch('/api/get-queue')
+            ]);
+            const readyData = await readyRes.json();
+            const queueData = await queueRes.json();
+            if (readyData.status === 'success' && Array.isArray(readyData.data)) readyList = readyData.data;
+            if (queueData.status === 'success' && Array.isArray(queueData.data)) queueList = queueData.data;
+        } catch (err) {
+            console.error("Failed to load staff data from server:", err);
+        }
+        globalStaffStats = {};
+
+        staffListData.forEach(staff => {
+            globalStaffStats[staff.name] = { role: staff.role, carsCount: 0, inProgressCount: 0 };
+        });
+
+        // A job with no washer on record (started by an admin, or from
+        // before this tracking existed) is left unattributed rather than
+        // round-robin-fabricated onto a random staff member.
+        let unassignedCount = 0;
+        readyList.forEach(car => {
+            if (car.washer && globalStaffStats[car.washer]) {
+                globalStaffStats[car.washer].carsCount += 1;
+            } else {
+                unassignedCount += 1;
+            }
+        });
+        queueList.forEach(car => {
+            if (car.status === 'in_progress' && car.washer && globalStaffStats[car.washer]) {
+                globalStaffStats[car.washer].inProgressCount += 1;
+            }
+        });
+
+        const tbody = document.getElementById('staff-table-body');
+        tbody.innerHTML = '';
+
+        Object.keys(globalStaffStats).forEach(name => {
+            let data = globalStaffStats[name];
+            tbody.innerHTML += `
+                <tr>
+                    <td><strong>${escapeHtml(name)}</strong></td>
+                    <td style="color: var(--text-muted); font-size: 11px;">${escapeHtml(data.role)}</td>
+                    <td>${data.carsCount}</td>
+                    <td>${data.inProgressCount > 0 ? `<span class="badge-active-task">${data.inProgressCount} active</span>` : '<span style="color: var(--text-muted);">—</span>'}</td>
+                </tr>
+            `;
+        });
+
+        const unassignedNote = document.getElementById('unassigned-note');
+        if (unassignedCount > 0) {
+            unassignedNote.style.display = 'block';
+            unassignedNote.innerText = `${unassignedCount} completed vehicle(s) have no washer on record (started by an admin, or before per-job tracking existed) and aren't counted toward anyone's total above.`;
+        } else {
+            unassignedNote.style.display = 'none';
+        }
+
+        // Total Vehicles Completed reflects every ready/completed car
+        // regardless of attribution - it shouldn't shrink just because a
+        // job has no recorded washer.
+        document.getElementById('total-staff-count').innerText = `${staffListData.length} Staff`;
+        document.getElementById('total-cars-washed').innerText = readyList.length;
+    }
+
+    function exportWashersCSV() {
+        downloadCSV('MD57_Staff_Report.csv',
+            ['Washer Name', 'Role', 'Completed Vehicles', 'In Progress'],
+            Object.entries(globalStaffStats).map(([name, data]) => [name, data.role, data.carsCount, data.inProgressCount]));
+    }
+
+    // Unlike exportWashersCSV above (built client-side from data already on
+    // screen), this downloads a server-generated CSV straight from the
+    // staff_attendance table (/api/export-attendance-csv, admin-only) - the
+    // full record, not just whatever's rendered for today's date.
+    function exportAttendanceCSV() {
+        window.location.href = '/api/export-attendance-csv';
+    }
+</script>
+{% endblock %}

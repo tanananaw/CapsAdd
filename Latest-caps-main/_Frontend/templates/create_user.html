@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% block page_comment %}Create User{% endblock %}
+{% block title %}MD57 Car Wash & Auto Detailing - Create User{% endblock %}
+
+{% block extra_style %}
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 20px;
+            padding: 40px 16px;
+            width: 100%;
+            animation: smoothFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-top: 5px solid var(--accent-amber);
+            padding: 28px 26px;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+        .card h2 {
+            margin: 0 0 4px 0;
+            color: var(--text-bright);
+            font-size: 18px;
+            font-weight: 800;
+        }
+        .card .subtitle {
+            margin: 0 0 20px 0;
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+        .mb-3 { margin-bottom: 14px; }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            color: var(--text-bright);
+            border-radius: 8px;
+            font-size: 13px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--accent-amber);
+        }
+        #responseMsg {
+            margin-top: 14px;
+            font-size: 12px;
+            text-align: center;
+            font-weight: 600;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 14px;
+            color: var(--text-muted);
+            font-size: 12px;
+            text-decoration: none;
+        }
+        .back-link:hover { color: var(--accent-amber); }
+{% endblock %}
+
+{% block content %}
+            <div class="card">
+                <h2><i class="fa-solid fa-user-plus"></i> Create User Account</h2>
+                <p class="subtitle">Create a new Admin, Staff, or Customer account.</p>
+
+                <form id="standaloneUserForm">
+                    <div class="stepper">
+                        <div class="stepper-step active" data-step="1">
+                            <div class="stepper-circle">1</div>
+                            <div class="stepper-label">Account</div>
+                        </div>
+                        <div class="stepper-line"></div>
+                        <div class="stepper-step" data-step="2">
+                            <div class="stepper-circle">2</div>
+                            <div class="stepper-label">Role & Password</div>
+                        </div>
+                    </div>
+
+                    <div class="form-step" data-step="1">
+                        <div class="mb-3">
+                            <label>Username (or Email)</label>
+                            <input type="text" id="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Full Name</label>
+                            <input type="text" id="fullname" placeholder="Optional">
+                        </div>
+                        <div class="stepper-nav">
+                            <button type="button" class="btn-primary stepper-next-btn" style="width:100%;">Next</button>
+                        </div>
+                    </div>
+
+                    <div class="form-step" data-step="2" style="display:none;">
+                        <div class="mb-3">
+                            <label>Role</label>
+                            <select id="role" onchange="renderRoleSpec()">
+                                <option value="staff">Staff</option>
+                                <option value="admin">Admin</option>
+                                <option value="customer">Customer</option>
+                            </select>
+                        </div>
+                        <div id="roleSpecBox" style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: 8px; padding: 12px 14px; margin-bottom: 14px; font-size: 11px; line-height: 1.6; color: var(--text-main);"></div>
+                        <div class="mb-3">
+                            <label>Password</label>
+                            <input type="password" id="password" minlength="6" required>
+                        </div>
+                        <div class="stepper-nav">
+                            <button type="button" class="btn-secondary stepper-back-btn">Back</button>
+                            <button type="submit" class="btn-primary stepper-submit-btn">Save User</button>
+                        </div>
+                    </div>
+                </form>
+                <a href="/admin" class="back-link">&larr; Back to Admin Dashboard</a>
+                <div id="responseMsg"></div>
+            </div>
+
+            <div class="card" style="border-top-color: var(--accent-red);">
+                <h2><i class="fa-solid fa-key"></i> Reset Existing Password</h2>
+                <p class="subtitle">For a customer/staff who forgot their password and can't (or didn't) use the self-service email link. Doesn't work for Google Sign-In accounts.</p>
+                <form id="resetPasswordForm">
+                    <div class="mb-3">
+                        <label>Username (or Email)</label>
+                        <input type="text" id="reset-username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>New Password</label>
+                        <input type="password" id="reset-new-password" minlength="6" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%;">Reset Password</button>
+                </form>
+                <div id="resetResponseMsg" style="margin-top: 14px; font-size: 12px; text-align: center; font-weight: 600;"></div>
+            </div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    // Plain-language account specification per role, shown at creation time
+    // so whoever's provisioning an account knows exactly what it can and
+    // can't do before granting it - misjudging this is how an account ends
+    // up over-privileged.
+    const ROLE_SPECS = {
+        admin: {
+            label: '<i class="fa-solid fa-shield-halved"></i> Admin (Manager)',
+            can: [
+                'Full system access: analytics, admin dashboard, staff roster',
+                'Create/manage accounts of any role; reset non-Google passwords',
+                'Record staff attendance (staff can no longer clock themselves in)',
+                'Confirm or send back a job staff marked done, before it reaches the customer',
+                'Notify customers their vehicle is ready; archive to History',
+                'Restore cancelled bookings',
+                'View full audit log and real staff performance metrics',
+            ],
+        },
+        staff: {
+            label: '<i class="fa-solid fa-user-gear"></i> Staff (Washer)',
+            can: [
+                'View the live queue and self-claim ("Start") waiting jobs',
+                'Mark a job done - goes to "awaiting confirmation," not straight to Ready',
+                'Add walk-in bookings',
+                'View Ready list, Cancelled list, and History (read-only there)',
+            ],
+            cannot: [
+                'Clock themselves in/out (admin records attendance)',
+                'Notify customers, archive to History, or confirm their own completions',
+                'Restore a cancelled booking, or create/manage user accounts',
+            ],
+        },
+        customer: {
+            label: '<i class="fa-solid fa-user"></i> Customer',
+            can: [
+                'Book a service (online or scheduled) and cancel their own bookings',
+                'View the live queue - their own booking in full; other customers\' rows are masked',
+                'Leave feedback for their own completed visits',
+            ],
+            cannot: [
+                'See other customers\' full names, plates, or emails on the queue board',
+                'Start/complete services, or reach any staff/admin page or action',
+            ],
+        },
+    };
+
+    function renderRoleSpec() {
+        const role = document.getElementById('role').value;
+        const spec = ROLE_SPECS[role];
+        const box = document.getElementById('roleSpecBox');
+        if (!spec) { box.innerHTML = ''; return; }
+
+        let html = `<strong style="display:block; margin-bottom: 6px; color: var(--text-bright);">${spec.label}</strong>`;
+        html += '<div style="color: var(--accent-green); font-weight: 700; margin-bottom: 2px;">Can:</div><ul style="margin: 0 0 8px 16px; padding: 0;">';
+        spec.can.forEach(item => { html += `<li>${item}</li>`; });
+        html += '</ul>';
+        if (spec.cannot) {
+            html += '<div style="color: var(--accent-red); font-weight: 700; margin-bottom: 2px;">Cannot:</div><ul style="margin: 0 0 0 16px; padding: 0;">';
+            spec.cannot.forEach(item => { html += `<li>${item}</li>`; });
+            html += '</ul>';
+        }
+        box.innerHTML = html;
+    }
+
+    document.addEventListener('DOMContentLoaded', renderRoleSpec);
+
+    function validateCreateUserStep(step) {
+        if (step === 1 && !document.getElementById('username').value.trim()) {
+            showToast('Required', 'Please enter a username or email.', 'error');
+            return false;
+        }
+        return true;
+    }
+    let createUserStepper;
+    document.addEventListener('DOMContentLoaded', () => {
+        createUserStepper = initStepper(document.getElementById('standaloneUserForm'), 2, validateCreateUserStep);
+    });
+
+    document.getElementById('standaloneUserForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const username = document.getElementById('username').value;
+        const fullname = document.getElementById('fullname').value;
+        const password = document.getElementById('password').value;
+        const role = document.getElementById('role').value;
+        const msg = document.getElementById('responseMsg');
+
+        try {
+            const res = await fetch('/api/admin/create-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, fullname, password, role })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                msg.style.color = 'var(--accent-green)';
+                msg.innerText = data.message;
+                document.getElementById('standaloneUserForm').reset();
+                renderRoleSpec();
+                if (createUserStepper) createUserStepper.back(); // land back on step 1, not an emptied step 2
+            } else {
+                msg.style.color = 'var(--accent-red)';
+                msg.innerText = data.message;
+            }
+        } catch (err) {
+            msg.style.color = 'var(--accent-red)';
+            msg.innerText = 'Connection error.';
+        }
+    });
+
+    document.getElementById('resetPasswordForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const username = document.getElementById('reset-username').value;
+        const newPassword = document.getElementById('reset-new-password').value;
+        const msg = document.getElementById('resetResponseMsg');
+
+        try {
+            const res = await fetch('/api/admin/reset-user-password', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, new_password: newPassword })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                msg.style.color = 'var(--accent-green)';
+                msg.innerText = data.message;
+                document.getElementById('resetPasswordForm').reset();
+            } else {
+                msg.style.color = 'var(--accent-red)';
+                msg.innerText = data.message;
+            }
+        } catch (err) {
+            msg.style.color = 'var(--accent-red)';
+            msg.innerText = 'Connection error.';
+        }
+    });
+</script>
+{% endblock %}

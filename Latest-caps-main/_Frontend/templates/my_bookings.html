@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+{% block page_comment %}My Bookings{% endblock %}
+{% block title %}MD57 Car Wash & Auto Detailing - My Bookings{% endblock %}
+
+{% block extra_style %}
+        .main-container {
+            flex: 1;
+            padding: 25px 16px;
+            max-width: 820px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            animation: smoothFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-bright);
+            margin: 8px 0 0 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .booking-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 18px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .booking-card.past { opacity: 0.85; }
+        .booking-main { min-width: 0; flex: 1 1 260px; }
+        .booking-title { font-size: 14px; font-weight: 700; color: var(--text-bright); }
+        .booking-meta { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.6; }
+        .booking-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .booking-actions button, .booking-actions a { font-size: 12px; padding: 7px 12px; }
+        .status-pill {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            margin-left: 6px;
+            vertical-align: middle;
+            background: var(--bg-light);
+            color: var(--text-muted);
+            border: 1px solid var(--border-color);
+        }
+        .status-pill.waiting { color: #2563eb; border-color: rgba(37, 99, 235, 0.3); background: rgba(37, 99, 235, 0.06); }
+        .status-pill.active { color: #9333ea; border-color: rgba(147, 51, 234, 0.3); background: rgba(147, 51, 234, 0.06); }
+        .status-pill.ready, .status-pill.completed { color: var(--accent-green); border-color: rgba(22, 163, 74, 0.3); background: rgba(22, 163, 74, 0.06); }
+        .status-pill.cancelled { color: var(--accent-red); border-color: rgba(220, 38, 38, 0.3); background: rgba(220, 38, 38, 0.06); }
+        .moved-note {
+            flex-basis: 100%;
+            font-size: 12px;
+            line-height: 1.5;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: rgba(217, 119, 6, 0.08);
+            border: 1px solid rgba(217, 119, 6, 0.3);
+            color: var(--text-main);
+        }
+        .moved-note.by-customer {
+            background: var(--bg-light);
+            border-color: var(--border-color);
+            color: var(--text-muted);
+        }
+        .empty-note {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-style: italic;
+            padding: 14px 0;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            padding: 20px;
+        }
+        .modal-overlay.open { opacity: 1; visibility: visible; }
+        .modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-top: 5px solid var(--accent-amber);
+            padding: 22px;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 400px;
+        }
+        .modal-content h3 { margin: 0 0 6px 0; font-size: 16px; color: var(--text-bright); }
+        .modal-content label {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin: 12px 0 4px 0;
+        }
+        .modal-content input, .modal-content select {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-light);
+            color: var(--text-main);
+            font: inherit;
+            font-size: 13px;
+        }
+        .modal-error { display: none; margin-top: 12px; font-size: 12px; color: var(--accent-red); line-height: 1.5; }
+        .modal-buttons { display: flex; gap: 10px; margin-top: 18px; }
+        .modal-buttons button { flex: 1; }
+{% endblock %}
+
+{% block content %}
+            <h2 class="page-title"><i class="fa-solid fa-calendar-check"></i> My Bookings</h2>
+            <p class="page-subtitle">Your upcoming and past visits. You can move or cancel a booking until service starts.</p>
+
+            <h3 class="section-title">Upcoming</h3>
+            <div id="upcomingList"><p class="empty-note">Loading...</p></div>
+
+            <h3 class="section-title">Past</h3>
+            <div id="pastList"><p class="empty-note">Loading...</p></div>
+{% endblock %}
+
+{% block modals %}
+    <div class="modal-overlay" id="rescheduleModal">
+        <div class="modal-content">
+            <h3><i class="fa-solid fa-calendar-days"></i> Pick a New Time</h3>
+            <p id="rescheduleFor" style="margin: 0; font-size: 12px; color: var(--text-muted);"></p>
+            <label for="newDateInput">Date</label>
+            <input type="date" id="newDateInput">
+            <label for="newTimeSelect">Time</label>
+            <select id="newTimeSelect"></select>
+            <div class="modal-error" id="rescheduleError"></div>
+            <div class="modal-buttons">
+                <button type="button" class="btn-secondary" onclick="closeReschedule()">Back</button>
+                <button type="button" class="btn-primary" id="rescheduleSaveBtn" onclick="saveReschedule()">Move Booking</button>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    const UPCOMING_STATUSES = ['waiting', 'in_progress', 'pending_confirmation', 'ready'];
+    const STATUS_LABELS = {
+        waiting: ['waiting', 'Waiting'],
+        in_progress: ['active', 'In Service'],
+        pending_confirmation: ['active', 'Finishing Up'],
+        ready: ['ready', 'Ready for Pickup'],
+        completed: ['completed', 'Completed'],
+        cancelled: ['cancelled', 'Cancelled'],
+    };
+    let myBookings = [];
+    let rescheduleTarget = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        document.getElementById('newTimeSelect').innerHTML =
+            BOOKING_TIME_SLOTS.map(t => `<option value="${t}">${t}</option>`).join('');
+        document.getElementById('newDateInput').min = getTodayDateStr();
+        loadMyBookings();
+    });
+    onLiveUpdate(loadMyBookings);
+
+    function loadMyBookings() {
+        fetch('/api/my-bookings')
+            .then(res => res.json())
+            .then(data => {
+                myBookings = (data.status === 'success' && Array.isArray(data.data)) ? data.data : [];
+                renderBookings();
+            })
+            .catch(() => showToast('Error', 'Could not load your bookings. Please refresh.', 'error'));
+    }
+
+    function describeSlot(b) {
+        return b.booking_date && b.booking_time ? `${b.booking_date} at ${b.booking_time}` : 'Walk-in';
+    }
+
+    function bookingCard(b, isUpcoming) {
+        const [pillClass, pillText] = STATUS_LABELS[b.status] || ['', b.status];
+        let movedNote = '';
+        if (isUpcoming && b.rescheduled_from) {
+            movedNote = b.reschedule_reason === 'staff_absent'
+                ? `<div class="moved-note"><i class="fa-solid fa-triangle-exclamation"></i> Sorry - no staff were available for your original time (${escapeHtml(b.rescheduled_from)}), so we moved this booking to ${escapeHtml(describeSlot(b))}. If that doesn't suit you, pick another time or cancel below.</div>`
+                : `<div class="moved-note by-customer"><i class="fa-solid fa-clock-rotate-left"></i> You moved this booking from ${escapeHtml(b.rescheduled_from)}.</div>`;
+        }
+        if (!isUpcoming && b.status === 'cancelled' && b.cancel_reason === 'staff_absent') {
+            movedNote = `<div class="moved-note"><i class="fa-solid fa-triangle-exclamation"></i> Cancelled by MD57 - no staff were available and no later day had staff scheduled. Sorry for the trouble; you're welcome to book again.</div>`;
+        }
+
+        let actions = '';
+        if (b.status === 'waiting') {
+            actions = `
+                ${b.booking_date ? `<button type="button" class="btn-secondary" onclick="openReschedule(${Number(b.id)})"><i class="fa-solid fa-calendar-days"></i> Reschedule</button>` : ''}
+                <button type="button" class="btn-secondary" onclick="cancelMyBooking(${Number(b.id)})"><i class="fa-solid fa-xmark"></i> Cancel</button>`;
+        } else if (b.status === 'completed' && !b.has_feedback) {
+            actions = `<a class="btn-primary" href="/feedback" style="text-decoration: none;"><i class="fa-solid fa-star"></i> Leave Feedback</a>`;
+        }
+
+        return `
+            <div class="booking-card${isUpcoming ? '' : ' past'}">
+                <div class="booking-main">
+                    <div class="booking-title">${escapeHtml(b.plate_number)} &bull; ${escapeHtml(b.service_type)}
+                        <span class="status-pill ${pillClass}">${escapeHtml(pillText)}</span></div>
+                    <div class="booking-meta">
+                        <i class="fa-regular fa-calendar"></i> ${escapeHtml(describeSlot(b))}
+                        &bull; ${escapeHtml(b.assigned_bay || '')}
+                        ${b.queue_number != null && isUpcoming ? `&bull; Queue #${Number(b.queue_number)}` : ''}
+                        ${b.price != null ? `&bull; ${formatPeso(b.price)}` : ''}
+                        &bull; Booking MD57-${Number(b.id)}
+                    </div>
+                </div>
+                ${actions ? `<div class="booking-actions">${actions}</div>` : ''}
+                ${movedNote}
+            </div>`;
+    }
+
+    function renderBookings() {
+        const upcoming = myBookings.filter(b => UPCOMING_STATUSES.includes(b.status));
+        const past = myBookings.filter(b => !UPCOMING_STATUSES.includes(b.status));
+        document.getElementById('upcomingList').innerHTML = upcoming.length
+            ? upcoming.map(b => bookingCard(b, true)).join('')
+            : '<p class="empty-note">No upcoming bookings. <a href="/book">Book a service</a></p>';
+        document.getElementById('pastList').innerHTML = past.length
+            ? past.map(b => bookingCard(b, false)).join('')
+            : '<p class="empty-note">No past visits yet.</p>';
+        document.querySelectorAll('#upcomingList .booking-card, #pastList .booking-card')
+            .forEach(el => el.style.marginBottom = '10px');
+    }
+
+    function findBooking(id) {
+        return myBookings.find(b => Number(b.id) === Number(id));
+    }
+
+    function cancelMyBooking(id) {
+        const b = findBooking(id);
+        if (!b || !confirm(`Cancel your ${b.service_type} booking for ${b.plate_number} (${describeSlot(b)})?`)) return;
+        fetch('/api/cancel-booking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reservation_id: b.id })
+        })
+        .then(res => res.json())
+        .then(data => {
+            showToast(data.status === 'success' ? 'Cancelled' : 'Error',
+                data.message || 'Could not cancel the booking.', data.status === 'success' ? 'success' : 'error');
+            loadMyBookings();
+        })
+        .catch(() => showToast('Error', 'Connection error while cancelling.', 'error'));
+    }
+
+    function openReschedule(id) {
+        rescheduleTarget = findBooking(id);
+        if (!rescheduleTarget) return;
+        document.getElementById('rescheduleFor').innerText =
+            `${rescheduleTarget.plate_number} - ${rescheduleTarget.service_type}, currently ${describeSlot(rescheduleTarget)}.`;
+        document.getElementById('newDateInput').value = rescheduleTarget.booking_date;
+        document.getElementById('newTimeSelect').value = rescheduleTarget.booking_time;
+        document.getElementById('rescheduleError').style.display = 'none';
+        document.getElementById('rescheduleModal').classList.add('open');
+    }
+
+    function closeReschedule() {
+        document.getElementById('rescheduleModal').classList.remove('open');
+        rescheduleTarget = null;
+    }
+
+    function saveReschedule() {
+        const errorEl = document.getElementById('rescheduleError');
+        const saveBtn = document.getElementById('rescheduleSaveBtn');
+        const newDate = document.getElementById('newDateInput').value;
+        const newTime = document.getElementById('newTimeSelect').value;
+        if (!rescheduleTarget || !newDate || !newTime) return;
+
+        saveBtn.disabled = true;
+        errorEl.style.display = 'none';
+        fetch('/api/reschedule-booking', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ reservation_id: rescheduleTarget.id, booking_date: newDate, booking_time: newTime })
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'success') {
+                closeReschedule();
+                showToast('Rescheduled', data.message, 'success');
+                loadMyBookings();
+                return;
+            }
+            errorEl.innerText = data.message || 'That time is not available.';
+            errorEl.style.display = 'block';
+            // The server suggested the next day that works at this time.
+            if (data.suggested_date) document.getElementById('newDateInput').value = data.suggested_date;
+        })
+        .catch(() => {
+            errorEl.innerText = 'Connection error. Please try again.';
+            errorEl.style.display = 'block';
+        })
+        .finally(() => { saveBtn.disabled = false; });
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,17 @@
+.env
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+*.log
+.vscode/
+
+# Local SQLite database - contains real password hashes and uploaded ID
+# images once seeded/used. Never commit this.
+*.db
+*.sqlite3
+
+# Ad-hoc source dumps, not part of the app
+*_dump.txt

@@ -1,0 +1,207 @@
+{% extends "base.html" %}
+{% block page_comment %}Admin Dashboard{% endblock %}
+{% block title %}MD57 Car Wash & Auto Detailing - Admin Dashboard{% endblock %}
+
+{% block extra_style %}
+        .main-container {
+            flex: 1;
+            padding: 25px 16px;
+            max-width: 1100px;
+            margin: 0 auto;
+            width: 100%;
+            animation: smoothFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        /* .page-title / .page-subtitle now shared in style.css */
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            padding: 18px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent-amber);
+        }
+        .stat-card.completed::after { background: var(--accent-green); }
+        .stat-card.cancelled::after { background: var(--accent-red); }
+        .stat-card.staffed::after { background: #2563eb; }
+        .stat-card h4 {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+        .stat-card .value {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--text-bright);
+            margin: 6px 0 0 0;
+        }
+        .stat-card .value small {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .stat-card.completed .value { color: var(--accent-green); }
+        .stat-card.cancelled .value { color: var(--accent-red); }
+        .stat-card.staffed .value { color: #2563eb; }
+
+        .section-heading {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-bright);
+            margin: 0 0 12px 0;
+        }
+
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(220px, 1fr));
+            gap: 16px;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px 18px;
+            border-radius: 12px;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.25s ease;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+        .card:hover {
+            border-color: var(--accent-amber);
+            box-shadow: 0 20px 25px -5px rgba(37, 99, 235, 0.1), 0 8px 10px -6px rgba(37, 99, 235, 0.1);
+            transform: translateY(-4px);
+        }
+        .card h3 {
+            margin: 0;
+            color: var(--accent-amber);
+            font-size: 15px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .card p {
+            margin: 0;
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        @media (max-width: 900px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .cards-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 600px) {
+            .stats-grid { grid-template-columns: 1fr; }
+            .cards-grid { grid-template-columns: 1fr; }
+        }
+{% endblock %}
+
+{% block content %}
+            <h2 class="page-title"><i class="fa-solid fa-shield-halved"></i> Admin Command Center</h2>
+            <p class="page-subtitle">Real-time queue monitoring, AI analytics, and staff management.</p>
+
+            <!-- The 4 numbers an owner/manager actually checks first, above
+                 every navigation card - real live figures from
+                 /api/admin/metrics, not placeholders. -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Current Queue Length</h4>
+                    <p class="value" id="admin-queue-count">--</p>
+                </div>
+                <div class="stat-card completed">
+                    <h4>Completed Today</h4>
+                    <p class="value" id="admin-completed-today">--</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Avg Wait Today</h4>
+                    <p class="value" id="admin-avg-wait-today">--</p>
+                </div>
+                <div class="stat-card staffed">
+                    <h4>Active Staff</h4>
+                    <p class="value" id="admin-active-staff">--</p>
+                </div>
+            </div>
+
+            <h3 class="section-heading">System Overview & Operations Command</h3>
+            <div class="cards-grid">
+                <a href="/analytics" class="card">
+                    <h3><i class="fa-solid fa-chart-line"></i> AI Demand & Analytics</h3>
+                    <p>Random Forest Demand Forecasting, MCDA Staff Rankings, and Weather Analytics.</p>
+                </a>
+                <a href="/queue" class="card">
+                    <h3><i class="fa-solid fa-car"></i> Live Queue Dashboard</h3>
+                    <p>Monitor the live queue flow and active bay timers directly.</p>
+                </a>
+                <a href="/ready" class="card">
+                    <h3><i class="fa-solid fa-bell"></i> Ready Vehicles & Alerts</h3>
+                    <p>Send Gmail alerts for completed vehicles or clear them from the list.</p>
+                </a>
+                <a href="/cancelled" class="card">
+                    <h3><i class="fa-solid fa-ban"></i> Cancelled Bookings</h3>
+                    <p>View cancelled bookings and restore them back to the active queue.</p>
+                </a>
+                <a href="/history" class="card">
+                    <h3><i class="fa-solid fa-clock-rotate-left"></i> Service History Database</h3>
+                    <p>Database of past transactions and vehicle services.</p>
+                </a>
+                <a href="/staff" class="card">
+                    <h3><i class="fa-solid fa-users"></i> Staff Performance</h3>
+                    <p>Track time clock, attendance, and completed/in-progress job counts.</p>
+                </a>
+                <a href="/admin/create-user-page" class="card">
+                    <h3><i class="fa-solid fa-user-plus"></i> User Account Management</h3>
+                    <p>Create a new Admin, Staff, or Customer account with server-side RBAC security.</p>
+                </a>
+                <a href="/admin/manage-pricing" class="card">
+                    <h3><i class="fa-solid fa-tags"></i> Manage Pricing</h3>
+                    <p>Edit service prices per vehicle size, retire/reactivate services, or add a new one.</p>
+                </a>
+            </div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    let adminMetricsLoadFailed = false;
+
+    function loadAdminQueueMetrics() {
+        loadKpiStrip('admin')
+            .then(loaded => { if (loaded) adminMetricsLoadFailed = false; })
+            .catch(err => {
+                console.error('Error loading metrics:', err);
+                // Only warn once per page load (this refreshes on every live
+                // update) so a real outage doesn't spam toasts - the
+                // stat tiles staying at "--" is itself a visible signal
+                // once the first toast has told the admin something's wrong.
+                if (!adminMetricsLoadFailed) {
+                    adminMetricsLoadFailed = true;
+                    showToast('Error', "Couldn't load the live queue metrics. They'll keep retrying in the background.", 'error');
+                }
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        loadAdminQueueMetrics();
+        onLiveUpdate(loadAdminQueueMetrics);
+    });
+</script>
+{% endblock %}

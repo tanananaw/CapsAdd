@@ -1,0 +1,8 @@
+# MD57 Car Wash IQMS - development/testing-only dependencies.
+# Not needed to run the app itself - only for running the test suite
+# (python -m pytest tests), including tests/test_frontend_smoke.py's
+# browser-driven smoke tests.
+# Install with: pip install -r requirements-dev.txt && python -m playwright install chromium
+
+pytest==9.1.1
+playwright==1.62.0

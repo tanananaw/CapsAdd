@@ -1,0 +1,1400 @@
+{% extends "base.html" %}
+{% block page_comment %}Manager Analytics{% endblock %}
+{% block title %}MD57 Car Wash & Auto Detailing - Manager Dashboard & Analytics{% endblock %}
+
+{% block extra_head %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block extra_style %}
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 16px;
+            width: 100%;
+            max-width: 1280px;
+            margin: 0 auto;
+            animation: smoothFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .analytics-grid-container {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 16px;
+            width: 100%;
+        }
+
+        .card-panel {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            padding-top: 23px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            /* Grid items default to min-width:auto, which refuses to
+               shrink below the width of whatever's inside them (the
+               6-column staff table, the 3-up accuracy strip) - without
+               this, that content pushes the grid track, and with it the
+               whole page, wider than the viewport on a phone instead of
+               scrolling within its own card. */
+            min-width: 0;
+            position: relative;
+            overflow: hidden;
+        }
+        /* Slow-drifting gold/navy hairline across the top of every panel -
+           a light "live system" cue rather than a static rule, kept to a
+           thin 3px strip so it reads as a design accent, not a distraction. */
+        .card-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--gold-600), var(--navy-700) 45%, var(--gold-400) 75%, var(--gold-600));
+            background-size: 200% 100%;
+            animation: analyticsShimmer 8s linear infinite;
+        }
+        @keyframes analyticsShimmer {
+            0% { background-position: 0% 0; }
+            100% { background-position: -200% 0; }
+        }
+
+        /* Small pulsing dot marking data as live, rather than only saying
+           so in the subtitle text - a common "real-time dashboard" cue. */
+        .live-pulse-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            margin-right: 6px;
+            box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.55);
+            animation: livePulse 2.2s ease-out infinite;
+        }
+        @keyframes livePulse {
+            0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.55); }
+            70% { box-shadow: 0 0 0 7px rgba(22, 163, 74, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+        }
+
+        /* .page-title / .page-subtitle now shared in style.css */
+
+        .chart-card-full {
+            background:
+                radial-gradient(circle, var(--border-color) 1px, transparent 1px),
+                var(--bg-light);
+            background-size: 18px 18px, 100% 100%;
+            padding: 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 16px;
+        }
+
+        .accuracy-strip {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .accuracy-item {
+            flex: 1;
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-left: 3px solid var(--accent-amber);
+            border-radius: 8px;
+            padding: 10px 12px;
+            transition: box-shadow 0.25s ease, border-color 0.25s ease;
+        }
+        .accuracy-item:hover {
+            border-left-color: var(--gold-400);
+            box-shadow: 0 0 0 1px var(--accent-amber-glow), 0 4px 14px -4px rgba(156, 122, 46, 0.35);
+        }
+        .accuracy-item h4 {
+            margin: 0 0 4px 0;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+        .accuracy-item .value {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+            color: var(--text-bright);
+            /* Gradient-filled digits - a common "data dashboard" cue,
+               tasteful at this size rather than applied to body text.
+               color above is the fallback for anything that doesn't
+               support background-clip:text; the gradient overrides it
+               wherever it's supported. */
+            background: linear-gradient(135deg, var(--navy-900), var(--gold-600) 70%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        html[data-theme="dark"] .accuracy-item .value {
+            background: linear-gradient(135deg, #ffffff, var(--gold-400) 70%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .accuracy-item .value small {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            /* The gradient text-fill on .value above sets
+               -webkit-text-fill-color:transparent, which is inherited by
+               this child regardless of the color set here - without
+               resetting it back, the "min"/"bookings" unit label would
+               render invisible instead of muted gray. */
+            -webkit-text-fill-color: var(--text-muted);
+            background: none;
+        }
+        .accuracy-note {
+            grid-column: 1 / -1;
+            font-size: 10px;
+            color: var(--text-muted);
+            font-style: italic;
+            margin: -4px 0 12px 0;
+        }
+
+        .chart-header-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .chart-header-flex h3 {
+            margin: 0;
+            color: var(--text-bright);
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        /* Visible chart switcher - a row of tab buttons naming every chart
+           up front, replacing a <select> dropdown that hid the other 5
+           chart options from anyone not thinking to open it. */
+        .chart-tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .chart-tab-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        .chart-tab-btn:hover {
+            border-color: var(--accent-amber);
+            color: var(--accent-amber);
+        }
+        .chart-tab-btn.active {
+            background: var(--accent-amber);
+            border-color: var(--accent-amber);
+            color: #ffffff;
+            box-shadow: 0 0 0 1px var(--accent-amber), 0 0 14px -2px rgba(156, 122, 46, 0.55);
+        }
+
+        /* Honest "not enough data yet" state for the Historical Trend
+           chart - shown instead of a placeholder/empty chart when the
+           30-day window has zero completed bookings. */
+        .trend-empty-state {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 220px;
+            text-align: center;
+            color: var(--text-muted);
+            padding: 0 20px;
+        }
+        .trend-empty-state i { font-size: 26px; opacity: 0.5; }
+        .trend-empty-state p { margin: 0; font-size: 12px; max-width: 360px; line-height: 1.5; }
+
+        /* Weather "Outlook" note - ties the forecast to a staffing
+           decision instead of just displaying it (see /api/weather-outlook). */
+        .weather-outlook-note {
+            margin-top: 10px;
+            padding: 9px 11px;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 8px;
+            font-size: 11px;
+            line-height: 1.5;
+            display: none;
+            align-items: flex-start;
+            gap: 7px;
+        }
+        .weather-outlook-note i { margin-top: 2px; opacity: 0.85; flex-shrink: 0; }
+
+        /* WEATHER UI WIDGET */
+        .weather-widget-container {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            border-radius: 10px;
+            padding: 16px;
+            color: #ffffff;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .weather-main-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 12px;
+            margin-bottom: 12px;
+        }
+        .weather-day-info h2 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+            color: #ffffff;
+        }
+        .weather-day-info p {
+            margin: 2px 0 0 0;
+            font-size: 11px;
+            opacity: 0.85;
+        }
+        .weather-temp-display {
+            font-size: 32px;
+            font-weight: 800;
+            margin: 8px 0 0 0;
+            line-height: 1;
+        }
+        .weather-condition {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        .weather-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 6px 12px;
+            font-size: 10px;
+            background: rgba(0, 0, 0, 0.15);
+            padding: 8px 10px;
+            border-radius: 8px;
+        }
+        .weather-stat-item {
+            display: flex;
+            justify-content: space-between;
+        }
+        .weather-stat-item span:first-child { opacity: 0.75; }
+        .weather-stat-item span:last-child { font-weight: 700; }
+
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+            margin-bottom: 10px;
+        }
+        .action-bar h3 { margin: 0; font-size: 13px; color: var(--text-bright); font-weight: 700; }
+
+        .btn-action {
+            background: rgba(220, 38, 38, 0.1);
+            color: #dc2626;
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.2s;
+        }
+        .btn-action:hover { background: rgba(220, 38, 38, 0.2); }
+
+        .table-responsive {
+            width: 100%;
+            overflow-y: auto;
+            overflow-x: auto;
+            max-height: 200px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+        }
+        table { width: 100%; min-width: 480px; border-collapse: collapse; background: transparent; }
+        th, td { padding: 8px 10px; text-align: center; border-bottom: 1px solid var(--border-color); font-size: 11px; }
+        th { background-color: var(--bg-light); color: var(--text-bright); font-weight: 700; position: sticky; top: 0; z-index: 1; }
+        tr:hover { background: var(--bg-light); }
+
+        .rank-badge { display: inline-block; width: 20px; height: 20px; line-height: 20px; border-radius: 50%; font-weight: bold; font-size: 10px; color: #fff; text-align: center; }
+        .rank-1 { background-color: var(--accent-green); box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 3.5px var(--accent-green), 0 0 10px -1px rgba(22, 163, 74, 0.7); }
+        .rank-2 { background-color: #2563eb; }
+        .rank-3 { background-color: #9333ea; }
+        .rank-default { background-color: var(--text-muted); }
+        .score-highlight { font-weight: bold; color: var(--accent-amber); }
+
+        .card-panel h2 { color: var(--text-bright); font-size: 14px; margin-top: 0; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; font-weight: 700; }
+
+        .leaderboard-row { display: flex; align-items: center; gap: 10px; background: var(--bg-light); padding: 8px 10px; border-radius: 6px; margin-bottom: 8px; border: 1px solid var(--border-color); }
+        .leaderboard-row .rank-badge { flex-shrink: 0; }
+        .leaderboard-name { font-weight: 700; color: var(--text-bright); font-size: 11px; margin-bottom: 4px; }
+        .leaderboard-stats { display: flex; gap: 10px; flex-wrap: wrap; font-size: 10px; color: var(--text-muted); }
+        .leaderboard-stats span { white-space: nowrap; }
+
+        @media (max-width: 900px) {
+            .analytics-grid-container {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .accuracy-strip {
+                flex-wrap: wrap;
+            }
+            .accuracy-item {
+                flex: 1 1 calc(50% - 5px);
+                min-width: 110px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 15px 10px;
+            }
+
+            .analytics-grid-container {
+                grid-template-columns: 1fr !important;
+                gap: 12px !important;
+            }
+        }
+{% endblock %}
+
+{% block content %}
+            <div class="analytics-grid-container">
+                <!-- LEFT: Manager Dashboard & Dynamic Chart -->
+                <div class="card-panel">
+                    <h2 class="page-title"><i class="fa-solid fa-chart-line"></i> Managerial Analytics Dashboard</h2>
+                    <p class="page-subtitle"><span class="live-pulse-dot"></span>Live MCDA Engine Core & AI Workforce Demand Analytics</p>
+
+                    <!-- Real MAE/RMSE for the wait-time predictor, computed from
+                         actual completed bookings (/api/model-accuracy) - not
+                         hardcoded placeholder numbers. -->
+                    <div class="accuracy-strip">
+                        <div class="accuracy-item">
+                            <h4>Mean Absolute Error</h4>
+                            <p class="value" id="acc-mae">-- <small>min</small></p>
+                        </div>
+                        <div class="accuracy-item">
+                            <h4>RMSE</h4>
+                            <p class="value" id="acc-rmse">-- <small>min</small></p>
+                        </div>
+                        <div class="accuracy-item">
+                            <h4>Sample Size</h4>
+                            <p class="value" id="acc-samples">-- <small>bookings</small></p>
+                        </div>
+                    </div>
+                    <p class="accuracy-note" id="acc-note" style="display:none;"></p>
+                    <p class="accuracy-note" id="acc-trend" style="display:none;"></p>
+
+                    <div class="chart-card-full">
+                        <div class="chart-header-flex">
+                            <h3 id="main-chart-title"><i class="fa-solid fa-chart-line"></i> AI Workforce Demand vs Actual</h3>
+                        </div>
+
+                        <!-- Visible chart switcher - every option named up
+                             front instead of hidden inside a dropdown. -->
+                        <div class="chart-tabs" role="tablist" aria-label="Analytics chart selector">
+                            <button type="button" class="chart-tab-btn active" data-chart="demand" onclick="switchMainChart('demand')">AI-Recommended Staffing</button>
+                            <button type="button" class="chart-tab-btn" data-chart="peak" onclick="switchMainChart('peak')">Peak Hours</button>
+                            <button type="button" class="chart-tab-btn" data-chart="service_type" onclick="switchMainChart('service_type')">Service Mix</button>
+                            <button type="button" class="chart-tab-btn" data-chart="wait_time" onclick="switchMainChart('wait_time')">Wait-Time</button>
+                            <button type="button" class="chart-tab-btn" data-chart="weather" onclick="switchMainChart('weather')">Weather</button>
+                            <button type="button" class="chart-tab-btn" data-chart="trend" onclick="switchMainChart('trend')">Historical Trend</button>
+                        </div>
+
+                        <!-- Main Interactive Chart Canvas container -->
+                        <div id="chart-container-wrapper" style="position: relative; height: 220px; width: 100%;">
+                            <canvas id="mainInteractiveChart"></canvas>
+                        </div>
+
+                        <!-- Point-color legend, Weather tab only (set/shown
+                             via JS - a single "Bookings" line's point colors
+                             carry the weather-condition meaning, so this
+                             spells that out rather than leaving it silent). -->
+                        <p id="chartCaption" style="display:none; font-size: 10px; color: var(--text-muted); margin: 6px 0 0 0; text-align: center;"></p>
+
+                        <!-- Second chart, Historical Trend tab only - queue
+                             volume + average wait time. Stacked below the
+                             main bookings chart on the same tab (added
+                             alongside it, not a 7th tab) since cramming a
+                             third differently-scaled line onto the chart
+                             above would just be cluttered. -->
+                        <div id="trendSecondaryWrapper" style="display:none; position: relative; height: 200px; width: 100%; margin-top: 14px;">
+                            <p style="font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin: 0 0 6px 0;">Queue Volume &amp; Average Wait Time</p>
+                            <canvas id="trendSecondaryChart"></canvas>
+                        </div>
+
+                        <!-- Honest empty state, shared by both 30-day charts
+                             (Historical Trend and Weather's daily line) -
+                             shown whenever that window has zero real
+                             completed bookings, never a placeholder/fake
+                             chart. Message text is set per-chart in JS. -->
+                        <div id="trendEmptyState" class="trend-empty-state">
+                            <i class="fa-solid fa-chart-column"></i>
+                            <p id="trendEmptyStateText">Not enough data yet.</p>
+                        </div>
+
+                        <!-- CUSTOM WEATHER UI WIDGET -->
+                        <div id="customWeatherWidget" class="weather-widget-container" style="display: none;">
+                            <div class="weather-main-row">
+                                <div class="weather-day-info">
+                                    <h2 id="w-day-label">MONDAY</h2>
+                                    <p id="w-date-label">APRIL 19</p>
+                                    <div class="weather-temp-display" id="w-temp">--°C</div>
+                                    <div class="weather-condition" id="w-condition">Loading...</div>
+                                </div>
+                                <div class="weather-stats-grid">
+                                    <div class="weather-stat-item"><span>Wind</span><span id="w-wind">-- km/h</span></div>
+                                    <div class="weather-stat-item"><span>Humidity</span><span id="w-hum">--%</span></div>
+                                    <div class="weather-stat-item"><span>Pressure</span><span id="w-press">-- hpa</span></div>
+                                    <div class="weather-stat-item"><span>Visibility</span><span id="w-vis">-- km</span></div>
+                                </div>
+                            </div>
+                            <!-- One-line Outlook: ties tomorrow's forecast to a
+                                 real staffing decision via /api/weather-outlook,
+                                 rather than a purely decorative forecast. -->
+                            <div id="weather-outlook-note" class="weather-outlook-note">
+                                <i class="fa-solid fa-circle-info"></i> <span id="weather-outlook-text">Loading outlook...</span>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div class="action-bar">
+                        <h3>Staff Productivity Ranking</h3>
+                        <button class="btn-action" id="exportPdfBtn" onclick="exportReportPDF()"><i class="fa-solid fa-file-lines"></i> Export PDF</button>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Staff Name</th>
+                                    <th>Speed (40%)</th>
+                                    <th>Completion (40%)</th>
+                                    <th>Feedback (20%)</th>
+                                    <th>Final Score</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staff-table-body">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Read-only staff leaderboard, same ranked data as the table -->
+                <div class="card-panel">
+                    <h2><i class="fa-solid fa-ranking-star"></i> Staff Leaderboard</h2>
+                    <p class="page-subtitle" id="metrics-source-note" style="margin-bottom: 10px;">Loading real staff data...</p>
+                    <div id="staffLeaderboardList"></div>
+                </div>
+            </div>
+{% endblock %}
+
+{% block modals %}
+    <!-- LOGOUT ANIMATION MODAL OVERLAY -->
+    <div id="logoutAnimationModal">
+        <div class="logout-animation-card">
+            <div class="logout-icon-animated"><i class="fa-solid fa-car"></i> <i class="fa-solid fa-chart-line"></i></div>
+            <h3>Signing Out...</h3>
+            <p>Thank you for choosing our Car Wash. God Bless You!!</p>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    // Holds the most recently rendered staff ranking, so Export PDF can
+    // send the exact numbers currently on screen instead of guessing.
+    let lastRankedStaffList = [];
+
+    let globalDbData = null;
+    let mainInteractiveChartInstance = null;
+    let trendSecondaryChartInstance = null;
+
+    window.addEventListener('DOMContentLoaded', () => {
+        updateCurrentDate();
+        fetchLiveWeather();
+        loadModelAccuracy();
+
+        fetch('/api/analytics-metrics')
+            .then(res => res.json())
+            .then(data => {
+                globalDbData = formatChartData(data);
+                initDashboard(globalDbData);
+            })
+            .catch(err => {
+                console.warn("Analytics data unavailable - showing empty charts:", err);
+                globalDbData = getDefaultData();
+                initDashboard(globalDbData);
+            });
+
+        loadRealStaffMetrics();
+    });
+
+    // Fetches real Speed (started_at -> completed_at vs. each job's
+    // benchmark), real Completion % (resolved jobs that ended in
+    // completion), and real Rating (actual customer feedback) and feeds
+    // them straight into the MCDA ranking - no editable staging area
+    // anymore, since this used to be a manual simulator (typed-in numbers)
+    // before real data existed to replace it with. A staff member with no
+    // underlying data yet contributes 0 on that metric and is flagged in
+    // the note below, rather than silently ranking on a fabricated number.
+    function loadRealStaffMetrics() {
+        fetch('/api/staff-real-metrics')
+            .then(res => res.json())
+            .then(data => {
+                const noteEl = document.getElementById('metrics-source-note');
+                if (data.status !== 'success' || !Array.isArray(data.data)) {
+                    noteEl.innerText = 'Could not load real staff data. Retry later.';
+                    calculateMCDA([]);
+                    return;
+                }
+
+                let staffWithNoData = [];
+                let staffData = data.data.map(staff => {
+                    if (staff.speed === null || staff.completion === null || staff.rating === null) {
+                        staffWithNoData.push(staff.name);
+                    }
+                    return {
+                        name: staff.name,
+                        service_speed: staff.speed !== null ? staff.speed : 0,
+                        completion: staff.completion !== null ? staff.completion : 0,
+                        feedback: staff.rating !== null ? staff.rating : 0
+                    };
+                });
+
+                noteEl.innerText = staffWithNoData.length > 0
+                    ? `Live from real completed jobs & feedback. Not enough real data yet for: ${staffWithNoData.join(', ')} (shown as 0 on the missing metric).`
+                    : 'Live from real completed jobs & feedback.';
+
+                calculateMCDA(staffData);
+            })
+            .catch(err => {
+                console.error('Failed to load real staff metrics:', err);
+                document.getElementById('metrics-source-note').innerText = 'Could not load real staff data.';
+                calculateMCDA([]);
+            });
+    }
+
+    function loadModelAccuracy() {
+        fetch('/api/model-accuracy')
+            .then(res => res.json())
+            .then(data => {
+                const noteEl = document.getElementById('acc-note');
+                if (data.status !== 'success' || !data.sample_count) {
+                    document.getElementById('acc-mae').innerHTML = '-- <small>min</small>';
+                    document.getElementById('acc-rmse').innerHTML = '-- <small>min</small>';
+                    document.getElementById('acc-samples').innerHTML = '0 <small>bookings</small>';
+                    noteEl.style.display = 'block';
+                    noteEl.innerText = 'Not enough completed bookings with a real prediction on record yet - this fills in as customers book and jobs complete.';
+                    return;
+                }
+                document.getElementById('acc-mae').innerHTML = `${data.mae_minutes} <small>min</small>`;
+                document.getElementById('acc-rmse').innerHTML = `${data.rmse_minutes} <small>min</small>`;
+                document.getElementById('acc-samples').innerHTML = `${data.sample_count} <small>bookings</small>`;
+                noteEl.style.display = 'none';
+
+                // Weekly MAE, oldest first - is the model getting better?
+                const trendEl = document.getElementById('acc-trend');
+                const trainedOn = {
+                    synthetic: 'synthetic starter data only',
+                    blended: `${data.model_real_samples} real bookings plus synthetic starter data`,
+                    real: `${data.model_real_samples} real bookings only`,
+                }[data.model_trained_on] || '';
+                const weeks = (data.weekly || []).map(w => {
+                    const label = new Date(w.week_start + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    return `wk of ${label}: ${w.mae_minutes} min (${w.sample_count})`;
+                });
+                trendEl.innerHTML = `<strong>Error by week:</strong> ${weeks.map(escapeHtml).join(' &rarr; ') || '-'}` +
+                    (trainedOn ? `<br><strong>Model trained on:</strong> ${escapeHtml(trainedOn)}` : '');
+                trendEl.style.display = 'block';
+            })
+            .catch(err => console.error('Failed to load model accuracy:', err));
+    }
+
+    function updateCurrentDate() {
+        const options = { weekday: 'long', month: 'long', day: 'numeric' };
+        const today = new Date();
+        const dateString = today.toLocaleDateString('en-US', options).toUpperCase();
+        const parts = dateString.split(', ');
+
+        if(parts.length >= 2) {
+            document.getElementById('w-day-label').innerText = parts[0];
+            document.getElementById('w-date-label').innerText = parts[1];
+        }
+    }
+
+    // Calls our own backend instead of OpenWeatherMap directly - the API
+    // key used to be embedded straight in this page's rendered HTML
+    // (readable via view-source by anyone who could reach this admin
+    // page). /api/weather-current now makes that call server-side and
+    // only ever ships the handful of display fields to the browser.
+    function fetchLiveWeather() {
+        fetch('/api/weather-current')
+            .then(response => response.json())
+            .then(data => {
+                if(data && data.status === 'success') {
+                    const currentTemp = data.temp_c;
+                    const humidity = data.humidity;
+                    const pressure = data.pressure;
+                    const windSpeed = data.wind_speed;
+                    const condition = data.condition;
+                    const visibility = data.visibility_km !== null && data.visibility_km !== undefined ? data.visibility_km : 10;
+
+                    document.getElementById('w-temp').innerText = `${currentTemp}°C`;
+                    document.getElementById('w-condition').innerText = condition;
+                    document.getElementById('w-hum').innerText = `${humidity}%`;
+                    document.getElementById('w-press').innerText = `${pressure} hpa`;
+                    document.getElementById('w-wind').innerText = `${windSpeed} km/h`;
+                    document.getElementById('w-vis').innerText = `${visibility} km`;
+                } else {
+                    throw new Error(data && data.message ? data.message : 'Weather unavailable');
+                }
+            })
+            .catch(err => {
+                console.warn("Live weather unavailable:", err);
+                document.getElementById('w-temp').innerText = '--°C';
+                document.getElementById('w-condition').innerText = 'Weather unavailable';
+                document.getElementById('w-hum').innerText = '--%';
+                document.getElementById('w-press').innerText = '-- hpa';
+                document.getElementById('w-wind').innerText = '-- km/h';
+                document.getElementById('w-vis').innerText = '-- km';
+            });
+    }
+
+    function formatChartData(data) {
+        let fallback = getDefaultData();
+        return {
+            demand_chart: data.demand_chart || fallback.demand_chart,
+            peak_chart: data.peak_chart || fallback.peak_chart,
+            service_pie: data.service_pie || fallback.service_pie,
+            wait_time_chart: data.wait_time_chart || fallback.wait_time_chart,
+            weather_chart: data.weather_chart || fallback.weather_chart,
+            trend_chart: data.trend_chart || fallback.trend_chart,
+            weather_trend_chart: data.weather_trend_chart || fallback.weather_trend_chart
+        };
+    }
+
+    // Shape-only stand-in for a chart the server didn't return (a failed or
+    // malformed /api/analytics-metrics load): real labels, zero values -
+    // never invented numbers. The trend/weather tabs show their honest
+    // "not enough data yet" state instead.
+    function getDefaultData() {
+        const hours = ['8 AM', '10 AM', '12 PM', '2 PM', '4 PM', '6 PM', '8 PM'];
+        const zeros = n => new Array(n).fill(0);
+        return {
+            demand_chart: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], recommended: zeros(7), scheduled: zeros(7), sample_days: zeros(7) },
+            peak_chart: { labels: hours, counts: zeros(7) },
+            service_pie: { labels: ['Car Wash & General', 'Detailing', 'Motorcycle'], shares: zeros(3) },
+            wait_time_chart: { labels: hours, actual: zeros(7), sample_counts: zeros(7) },
+            weather_chart: { labels: ['Sunny', 'Cloudy', 'Rainy'], demand: zeros(3) },
+            trend_chart: { labels: [], bookings: [], avg_wait_minutes: [], has_data: false, window_days: 30 },
+            weather_trend_chart: { labels: [], bookings: [], conditions: [], has_data: false, window_days: 30 }
+        };
+    }
+
+    function initDashboard(dbData) {
+        renderMainChart('demand', dbData);
+    }
+
+    function switchMainChart(type) {
+        document.querySelectorAll('.chart-tab-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.chart === type);
+        });
+        if(globalDbData) {
+            renderMainChart(type, globalDbData);
+        } else {
+            renderMainChart(type, getDefaultData());
+        }
+    }
+
+    // Chart.js text/grid colors are drawn straight onto the canvas, so they
+    // don't inherit the page's --text-bright CSS variable the way regular
+    // DOM text does - each chart must read the current theme itself and
+    // pick a color with enough contrast against its own background.
+    function isDarkTheme() {
+        return document.documentElement.getAttribute('data-theme') === 'dark';
+    }
+    function getChartTextColor() {
+        return isDarkTheme() ? '#e5edf7' : '#1e293b';
+    }
+    function getChartGridColor() {
+        return isDarkTheme() ? 'rgba(148, 163, 184, 0.22)' : 'rgba(203, 213, 225, 0.5)';
+    }
+
+    // Redraw whichever chart tab is currently showing with the new theme's
+    // colors - toggling dark/light mode doesn't repaint an existing
+    // Chart.js canvas on its own.
+    document.addEventListener('md57-theme-changed', function() {
+        const activeBtn = document.querySelector('.chart-tab-btn.active');
+        const type = activeBtn ? activeBtn.dataset.chart : 'demand';
+        renderMainChart(type, globalDbData || getDefaultData());
+    });
+
+    function renderMainChart(type, dbData) {
+        const chartWrapper = document.getElementById('chart-container-wrapper');
+        const weatherWidget = document.getElementById('customWeatherWidget');
+        const trendEmptyState = document.getElementById('trendEmptyState');
+        const trendSecondaryWrapper = document.getElementById('trendSecondaryWrapper');
+        const titleEl = document.getElementById('main-chart-title');
+
+        // Default off for every tab except a successful 'trend'/'weather'
+        // respectively - set back on below once that specific case is
+        // confirmed.
+        trendSecondaryWrapper.style.display = 'none';
+        if (trendSecondaryChartInstance) {
+            trendSecondaryChartInstance.destroy();
+            trendSecondaryChartInstance = null;
+        }
+        document.getElementById('chartCaption').style.display = 'none';
+
+        if(type === 'weather') {
+            // Live widget stays visible - the historical line chart below
+            // is added alongside it, not a replacement (per explicit
+            // decision: the widget shows "right now", the chart shows the
+            // last 30 days' actual pattern).
+            weatherWidget.style.display = 'block';
+            updateCurrentDate();
+            fetchLiveWeather();
+            loadWeatherOutlook();
+        } else {
+            weatherWidget.style.display = 'none';
+        }
+
+        if(type === 'trend' || type === 'weather') {
+            const chartKey = type === 'trend' ? 'trend_chart' : 'weather_trend_chart';
+            const tData = dbData[chartKey] || { labels: [], bookings: [], has_data: false };
+            if (!tData.has_data) {
+                titleEl.innerText = type === 'trend'
+                    ? "Historical Trend - Bookings Completed (Last 30 Days)"
+                    : "Weather Impact - Daily Queue Volume (Last 30 Days)";
+                chartWrapper.style.display = 'none';
+                trendEmptyState.style.display = 'flex';
+                document.getElementById('trendEmptyStateText').innerText = type === 'trend'
+                    ? 'Not enough data yet. This fills in with real bookings-per-day and average wait time as jobs are completed over the next 30 days.'
+                    : 'Not enough data yet. This fills in with real daily booking volume alongside each day\'s recorded weather as bookings come in over the next 30 days.';
+                if (mainInteractiveChartInstance) {
+                    mainInteractiveChartInstance.destroy();
+                    mainInteractiveChartInstance = null;
+                }
+                return;
+            }
+        }
+
+        chartWrapper.style.display = 'block';
+        trendEmptyState.style.display = 'none';
+
+        chartWrapper.innerHTML = '<canvas id="mainInteractiveChart"></canvas>';
+        const ctx = document.getElementById('mainInteractiveChart').getContext('2d');
+
+        let chartConfig = {};
+        let customYScale = {
+            beginAtZero: true,
+            ticks: {
+                color: getChartTextColor(),
+                font: { size: 11, weight: '600' },
+                stepSize: 5
+            },
+            grid: { color: getChartGridColor() }
+        };
+
+        if(type === 'demand') {
+            titleEl.innerText = "AI-Recommended Staff Count vs Scheduled";
+            let dData = dbData.demand_chart;
+            let sampleDays = dData.sample_days || [];
+            // A weekday seen fewer than 2 times historically hasn't earned a
+            // confident recommendation yet - shown as a lighter bar rather
+            // than a full-strength number, so a brand-new system doesn't
+            // present a guess as a firm staffing target.
+            let recommendedColors = dData.recommended.map((_, i) =>
+                (sampleDays[i] || 0) < 2 ? 'rgba(37, 99, 235, 0.35)' : '#2563eb'
+            );
+            customYScale.ticks.stepSize = 1;
+            chartConfig = {
+                type: 'bar',
+                data: {
+                    labels: dData.labels,
+                    datasets: [{
+                        label: 'AI-Recommended Staff',
+                        data: dData.recommended,
+                        backgroundColor: recommendedColors,
+                        borderRadius: 6
+                    }, {
+                        label: 'Actually Scheduled',
+                        data: dData.scheduled,
+                        backgroundColor: '#16a34a',
+                        borderRadius: 6
+                    }]
+                }
+            };
+        } else if(type === 'peak') {
+            titleEl.innerText = "Peak Hours - Queue Volume by Hour";
+            let pData = dbData.peak_chart;
+            customYScale.ticks.stepSize = 5;
+            chartConfig = {
+                type: 'line',
+                data: {
+                    labels: pData.labels,
+                    datasets: [{
+                        label: 'Vehicles Count',
+                        data: pData.counts,
+                        borderColor: '#2563eb',
+                        backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#2563eb',
+                        pointRadius: 4
+                    }]
+                },
+                options: { plugins: { legend: { display: false } } }
+            };
+        } else if(type === 'service_type') {
+            titleEl.innerText = "Service Mix - Customers per Service";
+            let sData = dbData.service_pie;
+            chartConfig = {
+                type: 'bar',
+                data: {
+                    labels: sData.labels,
+                    datasets: [{
+                        label: 'Customers',
+                        data: sData.shares,
+                        backgroundColor: ['#2563eb', '#16a34a', '#9333ea'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    // Explicit scales here rather than falling through to
+                    // the shared tail block below (which hands every other
+                    // chart's y-axis the numeric customYScale config) -
+                    // with indexAxis:'y' the roles swap, so y is the
+                    // category (service name) axis and needs none of that,
+                    // while x becomes the numeric customer-count axis.
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: { color: getChartTextColor(), font: { size: 11, weight: '600' }, stepSize: 1 },
+                            grid: { color: getChartGridColor() }
+                        },
+                        y: {
+                            ticks: { color: getChartTextColor(), font: { size: 11, weight: '600' } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            };
+        } else if(type === 'wait_time') {
+            titleEl.innerText = "Wait-Time - Average Minutes by Hour";
+            let wData = dbData.wait_time_chart;
+            customYScale.ticks.stepSize = 10;
+            // A hour bucket with fewer than 2 real completed jobs hasn't
+            // earned a confident average yet - shown as a lighter/dashed
+            // point rather than a firm number, same "don't present a guess
+            // as data" rule the demand chart already applies via its
+            // sample_days low-confidence styling.
+            let waitSamples = wData.sample_counts || [];
+            let waitPointColors = wData.actual.map((_, i) => (waitSamples[i] || 0) < 2 ? 'rgba(220, 38, 38, 0.35)' : '#dc2626');
+            chartConfig = {
+                type: 'line',
+                data: {
+                    labels: wData.labels,
+                    datasets: [{
+                        label: 'Average Wait (mins)',
+                        data: wData.actual,
+                        borderColor: '#dc2626',
+                        backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: waitPointColors,
+                        pointRadius: 4
+                    }]
+                },
+                options: { plugins: { legend: { display: false } } }
+            };
+        } else if(type === 'weather') {
+            titleEl.innerText = "Weather Impact - Daily Queue Volume (Last 30 Days)";
+            let wtData = dbData.weather_trend_chart;
+            // Point color carries the day's dominant recorded weather
+            // condition - the single "Bookings" line plus these colors is
+            // how this chart shows weather-vs-volume, rather than a second
+            // overlaid series that would need its own (categorical, not
+            // numeric) axis. Caption below the canvas spells out the key.
+            const conditionColors = { 'Sunny': '#f59e0b', 'Cloudy': '#94a3b8', 'Rainy': '#2563eb' };
+            let pointColors = wtData.conditions.map(c => conditionColors[c] || '#cbd5e1');
+            document.getElementById('chartCaption').innerHTML =
+                '<span style="color:#f59e0b;">&#9679;</span> Sunny &nbsp; ' +
+                '<span style="color:#94a3b8;">&#9679;</span> Cloudy &nbsp; ' +
+                '<span style="color:#2563eb;">&#9679;</span> Rainy &nbsp; ' +
+                '<span style="color:#cbd5e1;">&#9679;</span> No weather on record';
+            document.getElementById('chartCaption').style.display = 'block';
+            chartConfig = {
+                type: 'line',
+                data: {
+                    labels: wtData.labels,
+                    datasets: [{
+                        label: 'Bookings',
+                        data: wtData.bookings,
+                        borderColor: '#94a3b8',
+                        backgroundColor: 'rgba(148, 163, 184, 0.12)',
+                        fill: true,
+                        tension: 0.3,
+                        pointBackgroundColor: pointColors,
+                        pointRadius: 5
+                    }]
+                },
+                options: { plugins: { legend: { display: false } } }
+            };
+        } else if(type === 'trend') {
+            // Revenue/sales was deliberately removed from this chart - this
+            // system has no POS/payment/transaction record anywhere (no
+            // discounts, refunds, partial payments, or payment method ever
+            // captured), so a peso figure here would only ever be service
+            // list-price x completed-job-count, not real sales data.
+            // Showing that under a "Revenue" label would misrepresent what
+            // this system actually tracks, and contradicts this project's
+            // own documented limitation that POS/sales tracking is out of
+            // scope. Bookings Completed alone is a real, defensible metric.
+            titleEl.innerText = "Historical Trend - Bookings Completed (Last 30 Days)";
+            let tData = dbData.trend_chart;
+            customYScale.ticks.stepSize = 1;
+            chartConfig = {
+                type: 'bar',
+                data: {
+                    labels: tData.labels,
+                    datasets: [{
+                        label: 'Bookings Completed',
+                        data: tData.bookings,
+                        backgroundColor: 'rgba(37, 99, 235, 0.65)',
+                        borderRadius: 3
+                    }]
+                },
+                options: {
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            ticks: { color: getChartTextColor(), font: { size: 9, weight: '600' }, maxRotation: 60, minRotation: 60 },
+                            grid: { display: false }
+                        },
+                        y: customYScale
+                    }
+                }
+            };
+            trendSecondaryWrapper.style.display = 'block';
+            renderTrendSecondaryChart(tData);
+        }
+
+        if(!chartConfig.options) chartConfig.options = {};
+        chartConfig.options.responsive = true;
+        chartConfig.options.maintainAspectRatio = false;
+
+        // 'trend' already set its own scales/legend above (single bookings
+        // axis, no legend needed for a lone dataset); 'service_type' sets
+        // its own scales above too (indexAxis:'y' swaps which axis is
+        // numeric). Every other tab shares this one config.
+        if(type !== 'trend' && type !== 'service_type') {
+            chartConfig.options.plugins = {
+                legend: { labels: { color: getChartTextColor(), font: { size: 12, weight: 'bold' } } }
+            };
+            chartConfig.options.scales = {
+                x: {
+                    ticks: { color: getChartTextColor(), font: { size: 11, weight: '600' } },
+                    grid: { color: getChartGridColor() }
+                },
+                y: customYScale
+            };
+        }
+
+        mainInteractiveChartInstance = new Chart(ctx, chartConfig);
+    }
+
+    // Second chart on the Historical Trend tab only - queue volume +
+    // average wait time, on its own canvas rather than a second
+    // differently-scaled line crammed onto the bookings chart above it.
+    function renderTrendSecondaryChart(tData) {
+        const ctx = document.getElementById('trendSecondaryChart').getContext('2d');
+        trendSecondaryChartInstance = new Chart(ctx, {
+            data: {
+                labels: tData.labels,
+                datasets: [
+                    {
+                        type: 'line',
+                        label: 'Bookings (Queue Volume)',
+                        data: tData.bookings,
+                        borderColor: '#2563eb',
+                        backgroundColor: '#2563eb',
+                        tension: 0.3,
+                        pointRadius: 2,
+                        yAxisID: 'yBookings'
+                    },
+                    {
+                        type: 'line',
+                        label: 'Avg Wait Time (mins)',
+                        data: tData.avg_wait_minutes,
+                        borderColor: '#dc2626',
+                        backgroundColor: '#dc2626',
+                        tension: 0.3,
+                        pointRadius: 2,
+                        yAxisID: 'yWait'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { color: getChartTextColor(), font: { size: 11, weight: 'bold' } } }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: getChartTextColor(), font: { size: 9, weight: '600' }, maxRotation: 60, minRotation: 60 },
+                        grid: { display: false }
+                    },
+                    yBookings: {
+                        beginAtZero: true,
+                        position: 'left',
+                        title: { display: true, text: 'Bookings', color: getChartTextColor(), font: { size: 10, weight: '700' } },
+                        ticks: { color: getChartTextColor(), font: { size: 10 }, stepSize: 1 },
+                        grid: { color: getChartGridColor() }
+                    },
+                    yWait: {
+                        beginAtZero: true,
+                        position: 'right',
+                        title: { display: true, text: 'Wait (mins)', color: getChartTextColor(), font: { size: 10, weight: '700' } },
+                        ticks: { color: getChartTextColor(), font: { size: 10 } },
+                        grid: { drawOnChartArea: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // One-line "Outlook" note (item 4): ties tomorrow's forecast to this
+    // shop's own historical rainy-vs-clear booking volume via
+    // /api/weather-outlook, instead of a purely decorative forecast strip.
+    function loadWeatherOutlook() {
+        const noteEl = document.getElementById('weather-outlook-note');
+        const textEl = document.getElementById('weather-outlook-text');
+        if (!noteEl || !textEl) return;
+        fetch('/api/weather-outlook')
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && data.message) {
+                    textEl.innerText = data.message;
+                    noteEl.style.display = 'flex';
+                } else {
+                    noteEl.style.display = 'none';
+                }
+            })
+            .catch(() => { noteEl.style.display = 'none'; });
+    }
+
+    function enforceBounds(value, min, max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
+    // Ranks whatever real staff data loadRealStaffMetrics() fetched - no
+    // more hardcoded five-name staff list, so this scales to however many
+    // staff accounts actually exist instead of silently ignoring a sixth
+    // hire or still showing someone who's left.
+    function calculateMCDA(realStaffData) {
+        const staffData = (realStaffData || []).map(staff => ({
+            name: staff.name,
+            service_speed: enforceBounds(parseFloat(staff.service_speed) || 0, 0, 100),
+            completion: enforceBounds(parseFloat(staff.completion) || 0, 0, 100),
+            feedback: enforceBounds(parseFloat(staff.feedback) || 0, 0, 5)
+        }));
+
+        if (staffData.length === 0) {
+            updateTableUI([]);
+            return;
+        }
+
+        fetch('/api/staff-evaluation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ staff_metrics: staffData })
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Server response failed');
+            return response.json();
+        })
+        .then(data => {
+            if(data.status === 'success') {
+                updateTableUI(data.ranked_productivity_report);
+            }
+        })
+        .catch(error => {
+            console.error('Staff ranking failed:', error);
+            lastRankedStaffList = [];
+            document.getElementById('staff-table-body').innerHTML =
+                '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">Could not rank staff right now - reload the page to retry.</td></tr>';
+        });
+    }
+
+    function rankBadgeClass(rank) {
+        if (rank === 1) return "rank-1";
+        if (rank === 2) return "rank-2";
+        if (rank === 3) return "rank-3";
+        return "rank-default";
+    }
+
+    function updateTableUI(rankedList) {
+        lastRankedStaffList = rankedList;
+        const tableBody = document.getElementById('staff-table-body');
+        tableBody.innerHTML = "";
+
+        if (rankedList.length === 0) {
+            tableBody.innerHTML = '<tr><td colspan="6" style="text-align:center; color: var(--text-muted);">No staff accounts to rank yet.</td></tr>';
+        }
+
+        rankedList.forEach(staff => {
+            const row = `
+                <tr>
+                    <td><span class="rank-badge ${rankBadgeClass(staff.rank)}">${staff.rank}</span></td>
+                    <td><strong>${escapeHtml(staff.name)}</strong></td>
+                    <td>${staff.service_speed} / 100</td>
+                    <td>${staff.completion}%</td>
+                    <td>${staff.feedback} / 5.0</td>
+                    <td class="score-highlight">${parseFloat(staff.saw_score).toFixed(4)}</td>
+                </tr>
+            `;
+            tableBody.innerHTML += row;
+        });
+
+        renderStaffLeaderboard(rankedList);
+    }
+
+    // Compact card view of the exact same ranked data as the table above -
+    // a quick-glance leaderboard next to the detailed, exportable table,
+    // rather than a second independent (and previously editable) copy of
+    // the same three numbers.
+    function renderStaffLeaderboard(rankedList) {
+        const container = document.getElementById('staffLeaderboardList');
+        if (!container) return;
+
+        if (rankedList.length === 0) {
+            container.innerHTML = '<p style="color: var(--text-muted); font-size: 12px;">No staff accounts yet.</p>';
+            return;
+        }
+
+        container.innerHTML = rankedList.map(staff => `
+            <div class="leaderboard-row">
+                <span class="rank-badge ${rankBadgeClass(staff.rank)}">${staff.rank}</span>
+                <div>
+                    <div class="leaderboard-name">${escapeHtml(staff.name)}</div>
+                    <div class="leaderboard-stats">
+                        <span><i class="fa-solid fa-bolt"></i> ${staff.service_speed}/100</span>
+                        <span><i class="fa-solid fa-circle-check"></i> ${staff.completion}%</span>
+                        <span><i class="fa-solid fa-star"></i> ${staff.feedback}/5.0</span>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Fixed light-mode colors regardless of the page's current theme - the
+    // PDF page is always a white background (unlike the on-screen charts,
+    // which read getChartTextColor()/getChartGridColor() for the live
+    // dark/light toggle), so these are hardcoded rather than shared with
+    // renderMainChart's theme-aware helpers.
+    function buildExportChartConfig(type, dbData) {
+        const textColor = '#1e293b';
+        const gridColor = 'rgba(203, 213, 225, 0.6)';
+        const baseScales = {
+            x: { ticks: { color: textColor, font: { size: 12, weight: '600' } }, grid: { color: gridColor } },
+            y: { beginAtZero: true, ticks: { color: textColor, font: { size: 12, weight: '600' } }, grid: { color: gridColor } }
+        };
+
+        if (type === 'peak_chart') {
+            const pData = dbData.peak_chart;
+            return {
+                type: 'line',
+                data: { labels: pData.labels, datasets: [{
+                    label: 'Vehicles Count', data: pData.counts,
+                    borderColor: '#2563eb', backgroundColor: 'rgba(37, 99, 235, 0.15)',
+                    fill: true, tension: 0.35, pointBackgroundColor: '#2563eb', pointRadius: 4
+                }] },
+                options: { responsive: false, animation: false, plugins: { legend: { display: false } }, scales: baseScales }
+            };
+        }
+        if (type === 'service_pie') {
+            const sData = dbData.service_pie;
+            return {
+                type: 'bar',
+                data: { labels: sData.labels, datasets: [{
+                    label: 'Customers', data: sData.shares,
+                    backgroundColor: ['#2563eb', '#16a34a', '#9333ea'], borderRadius: 6
+                }] },
+                options: {
+                    responsive: false, animation: false, indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { beginAtZero: true, ticks: { color: textColor, font: { size: 12, weight: '600' } }, grid: { color: gridColor } },
+                        y: { ticks: { color: textColor, font: { size: 12, weight: '600' } }, grid: { display: false } }
+                    }
+                }
+            };
+        }
+        if (type === 'wait_time_chart') {
+            const wData = dbData.wait_time_chart;
+            return {
+                type: 'line',
+                data: { labels: wData.labels, datasets: [{
+                    label: 'Average Wait (mins)', data: wData.actual,
+                    borderColor: '#dc2626', backgroundColor: 'rgba(220, 38, 38, 0.12)',
+                    fill: true, tension: 0.35, pointBackgroundColor: '#dc2626', pointRadius: 4
+                }] },
+                options: { responsive: false, animation: false, plugins: { legend: { display: false } }, scales: baseScales }
+            };
+        }
+        if (type === 'weather_chart') {
+            // The Sunny/Cloudy/Rainy totals chart, not the 30-day trend line
+            // - always populated as soon as any booking has a recorded
+            // weather_condition, so it can't fall into the trend chart's
+            // "not enough data yet" empty state and go missing from the PDF.
+            const wtData = dbData.weather_chart;
+            const conditionColors = { 'Sunny': '#f59e0b', 'Cloudy': '#94a3b8', 'Rainy': '#2563eb' };
+            return {
+                type: 'bar',
+                data: { labels: wtData.labels, datasets: [{
+                    label: 'Bookings', data: wtData.demand,
+                    backgroundColor: wtData.labels.map(l => conditionColors[l] || '#94a3b8'), borderRadius: 6
+                }] },
+                options: { responsive: false, animation: false, plugins: { legend: { display: false } }, scales: baseScales }
+            };
+        }
+        return null;
+    }
+
+    // Renders a chart off-screen (real layout dimensions so Chart.js sizes
+    // it correctly, just positioned outside the viewport rather than
+    // display:none, which would give it a 0x0 box) and captures it as a
+    // PNG data URL for the PDF - the interactive on-screen canvas isn't
+    // reused since only one chart tab is mounted at a time.
+    function captureChartImage(type, dbData) {
+        return new Promise((resolve) => {
+            const config = buildExportChartConfig(type, dbData);
+            if (!config) { resolve(null); return; }
+
+            const holder = document.createElement('div');
+            holder.style.position = 'fixed';
+            holder.style.left = '-9999px';
+            holder.style.top = '0';
+            document.body.appendChild(holder);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 900;
+            canvas.height = 460;
+            holder.appendChild(canvas);
+
+            let chart;
+            try {
+                chart = new Chart(canvas.getContext('2d'), config);
+            } catch (e) {
+                console.error('Export chart render failed for', type, e);
+                holder.remove();
+                resolve(null);
+                return;
+            }
+
+            // animation:false renders synchronously in most Chart.js
+            // builds, but a frame + short delay is a cheap guarantee the
+            // canvas has actually painted before toBase64Image reads it.
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    let dataUrl = null;
+                    try {
+                        dataUrl = chart.toBase64Image('image/png', 1.0);
+                    } catch (e) {
+                        console.error('Export chart capture failed for', type, e);
+                    }
+                    chart.destroy();
+                    holder.remove();
+                    resolve(dataUrl);
+                }, 80);
+            });
+        });
+    }
+
+    async function exportReportPDF() {
+        const btn = document.getElementById('exportPdfBtn');
+        const originalBtnHtml = btn ? btn.innerHTML : null;
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Preparing...';
+        }
+        try {
+            const chartData = globalDbData || getDefaultData();
+
+            const [peakImg, serviceImg, waitImg, weatherImg] = await Promise.all([
+                captureChartImage('peak_chart', chartData),
+                captureChartImage('service_pie', chartData),
+                captureChartImage('wait_time_chart', chartData),
+                captureChartImage('weather_chart', chartData)
+            ]);
+
+            const res = await fetch('/export-pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ranked_productivity_report: lastRankedStaffList,
+                    // Same dbData the on-screen charts render from, so the
+                    // report's Peak Hours/Service Mix/Wait-Time/Weather
+                    // insights match whatever's on screen right now.
+                    analytics_charts: {
+                        peak_chart: chartData.peak_chart,
+                        service_pie: chartData.service_pie,
+                        wait_time_chart: chartData.wait_time_chart,
+                        weather_chart: chartData.weather_chart
+                    },
+                    analytics_chart_images: {
+                        peak_chart: peakImg,
+                        service_pie: serviceImg,
+                        wait_time_chart: waitImg,
+                        weather_chart: weatherImg
+                    }
+                })
+            });
+            if (!res.ok) throw new Error('Export failed (' + res.status + ')');
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'MD57_Manager_Analytics_Report.pdf';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            showToast('Error', 'Could not export report: ' + err.message, 'error');
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnHtml;
+            }
+        }
+    }
+
+</script>
+{% endblock %}
+

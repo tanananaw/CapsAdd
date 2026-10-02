@@ -1,0 +1,775 @@
+<!-- register.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>MD57 Car Wash - Customer Registration</title>
+    <link rel="icon" type="image/jpeg" href="{{ url_for('static', filename='images/md57logo.jpg') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script>
+        (function() {
+            try {
+                var t = localStorage.getItem('md57_theme');
+                if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+            } catch (e) {}
+        })();
+    </script>
+    <style>
+        :root {
+            --bg-light: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #cbd5e1;
+            --accent-amber: #9c7a2e; /* Muted gold - matches the site-wide navy/gold theme */
+            --accent-green: #16a34a;
+            --accent-red: #dc2626;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --text-bright: #0f172a;
+            --bg-overlay: rgba(248, 250, 252, 0.92);
+            --navbar-bg: rgba(255, 255, 255, 0.9);
+        }
+
+        html[data-theme="dark"] {
+            --bg-light: #0b1220;
+            --card-bg: #121b2e;
+            --border-color: #2a3752;
+            --text-main: #cbd5e1;
+            --text-muted: #8fa0b8;
+            --text-bright: #f1f5f9;
+            --bg-overlay: rgba(6, 14, 28, 0.94);
+            --navbar-bg: rgba(11, 18, 32, 0.9);
+        }
+
+        * { box-sizing: border-box; }
+        
+        @keyframes smoothFadeIn {
+            0% { opacity: 0; transform: translateY(-20px) scale(0.95); }
+            100% { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        @keyframes subtleFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-6px); }
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(var(--bg-overlay), var(--bg-overlay)),
+                        url("{{ url_for('static', filename='images/md57logo.jpg') }}") no-repeat center center fixed;
+            background-size: cover;
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Top Navigation Bar */
+        .top-navbar {
+            background: var(--navbar-bg);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        .nav-brand img {
+            width: 30px;
+            height: 30px;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .nav-menu {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            transition: color 0.2s;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            font-family: inherit;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            color: var(--accent-amber);
+        }
+
+        .theme-toggle-btn {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            width: 38px;
+            height: 20px;
+            padding: 0;
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 999px;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+        .theme-toggle-btn:hover { border-color: var(--accent-amber); }
+        .theme-toggle-btn .toggle-knob {
+            position: absolute;
+            top: 1px;
+            left: 1px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent-amber);
+            color: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            transition: transform 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+        }
+        html[data-theme="dark"] .theme-toggle-btn .toggle-knob { transform: translateX(18px); }
+
+        /* Main Content Center Area */
+        .main-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            width: 100%;
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            padding: 30px 25px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            text-align: center;
+            animation: smoothFadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .login-logo-container {
+            animation: subtleFloat 5s ease-in-out infinite;
+            margin-bottom: 15px;
+        }
+
+        .login-logo-container img {
+            width: 85px;
+            height: 85px;
+            object-fit: contain;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(156, 122, 46, 0.2);
+            border: 2px solid rgba(156, 122, 46, 0.4);
+            background: #ffffff;
+            padding: 4px;
+        }
+
+        h2 { color: var(--text-bright); margin: 0 0 5px 0; font-size: 20px; font-weight: 700; }
+        p.subtitle { color: var(--text-muted); font-size: 11px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 600; }
+
+        .form-group { text-align: left; margin-bottom: 14px; }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        input {
+            width: 100%;
+            padding: 11px 14px;
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 8px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent-amber);
+            box-shadow: 0 0 0 3px rgba(156, 122, 46, 0.15);
+            background: var(--card-bg);
+        }
+
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper input {
+            padding-right: 45px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            outline: none;
+            transition: color 0.2s;
+        }
+
+        .toggle-password:hover {
+            color: var(--accent-amber);
+        }
+
+        .toggle-password svg {
+            width: 18px;
+            height: 18px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent-amber);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 13px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+            box-shadow: 0 4px 12px rgba(156, 122, 46, 0.3);
+        }
+
+        button[type="submit"]:hover { background: #b6913f; }
+        button[type="submit"]:active { transform: scale(0.98); }
+
+        /* Divider for Google Sign-Up */
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 16px 0;
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .auth-divider::before, .auth-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .auth-divider::before { margin-right: 10px; }
+        .auth-divider::after { margin-left: 10px; }
+
+        /* Google Sign-In Button Styling */
+        .google-btn {
+            width: 100%;
+            padding: 11px;
+            background: #ffffff;
+            color: #1e293b;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.1s, border-color 0.2s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .google-btn:hover {
+            background: #f1f5f9;
+            border-color: #94a3b8;
+        }
+        .google-btn:active { transform: scale(0.98); }
+        .google-btn img {
+            width: 18px;
+            height: 18px;
+        }
+
+        .error {
+            color: #b91c1c; 
+            font-size: 12px; 
+            margin-top: 12px; 
+            background: rgba(239, 68, 68, 0.1); 
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            padding: 8px; 
+            border-radius: 8px;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .nav-links {
+            margin-top: 18px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 12px;
+        }
+
+        .register-link { color: var(--accent-amber); text-decoration: none; font-weight: 600; }
+        .register-link:hover { color: #b6913f; text-decoration: underline; }
+
+        /* Floating Modal Overlay Styles */
+        .floating-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+        
+        .modal-content {
+            background: var(--card-bg);
+            color: var(--text-bright);
+            padding: 24px;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 360px;
+            position: relative;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .modal-content h3 {
+            margin-top: 0;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            color: var(--accent-amber);
+        }
+        
+        .modal-content p {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+
+        .modal-content p strong {
+            color: var(--text-main);
+            font-size: 14px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 5px;
+            transition: color 0.2s;
+        }
+        .close-btn:hover { color: var(--text-main); }
+
+        .social-links {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 16px;
+        }
+        .social-btn {
+            background: var(--bg-light);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        .social-btn:hover {
+            border-color: var(--accent-amber);
+            background: rgba(156, 122, 46, 0.05);
+            color: var(--accent-amber);
+        }
+
+        .map-link-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 16px;
+            background: rgba(156, 122, 46, 0.1);
+            color: var(--accent-amber);
+            border: 1px solid rgba(156, 122, 46, 0.3);
+            padding: 10px 14px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: bold;
+            transition: background 0.2s;
+            width: 100%;
+        }
+        .map-link-btn:hover {
+            background: rgba(156, 122, 46, 0.2);
+        }
+
+        @media (max-width: 600px) {
+            .top-navbar { padding: 10px 15px; flex-wrap: wrap; row-gap: 8px; }
+            .nav-brand span { display: none; }
+            .nav-menu { gap: 10px; }
+            .nav-link { font-size: 11px; }
+            .theme-toggle-btn { width: 34px; height: 18px; }
+            .theme-toggle-btn .toggle-knob { width: 14px; height: 14px; }
+            html[data-theme="dark"] .theme-toggle-btn .toggle-knob { transform: translateX(16px); }
+        }
+
+        html, body { overflow-x: hidden; }
+
+        /* Multi-step stepper - same component as booking.html/create_user.html,
+           duplicated here (using this page's own local CSS variables) since
+           this standalone page doesn't load the shared stylesheet, same
+           reason toggleTheme() etc. are duplicated below instead of shared. */
+        .stepper { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px; }
+        .stepper-step { display: flex; flex-direction: column; align-items: center; gap: 5px; flex: 1; min-width: 0; }
+        .stepper-circle {
+            width: 28px; height: 28px; border-radius: 50%;
+            background: var(--bg-light); border: 2px solid var(--border-color); color: var(--text-muted);
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 12px; transition: all 0.25s ease; flex-shrink: 0;
+        }
+        .stepper-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-muted); text-align: center; white-space: nowrap; }
+        .stepper-step.active .stepper-circle { background: var(--accent-amber); border-color: var(--accent-amber); color: #ffffff; box-shadow: 0 0 0 4px rgba(156, 122, 46, 0.15); }
+        .stepper-step.active .stepper-label { color: var(--accent-amber); }
+        .stepper-step.completed .stepper-circle { background: var(--accent-green); border-color: var(--accent-green); color: #ffffff; }
+        .stepper-step.completed .stepper-label { color: var(--accent-green); }
+        .stepper-line { flex: 1 1 auto; height: 2px; background: var(--border-color); margin-top: 14px; min-width: 10px; }
+        .form-step { animation: smoothFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .stepper-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 4px; }
+        .stepper-nav button { flex: 1; margin-top: 0; }
+        .stepper-back-btn {
+            background: var(--bg-light); color: var(--text-main); border: 1px solid var(--border-color);
+            border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; padding: 12px;
+        }
+        .stepper-back-btn:hover { border-color: var(--accent-amber); color: var(--accent-amber); }
+    </style>
+</head>
+<body>
+
+    <nav class="top-navbar">
+        <a href="/login" class="nav-brand">
+            <img src="{{ url_for('static', filename='images/md57logo.jpg') }}" alt="MD57 Logo">
+            <span>MD57 Carwash & Auto Detailing</span>
+        </a>
+        <div class="nav-menu">
+            <button onclick="openModal('aboutModal')" class="nav-link">About</button>
+            <button onclick="openModal('contactModal')" class="nav-link">Contact</button>
+            <button onclick="openModal('locationModal')" class="nav-link">Location</button>
+            <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" aria-label="Toggle dark mode" title="Toggle dark mode">
+                <span class="toggle-knob"><i class="fa-solid fa-moon" id="themeToggleIcon"></i></span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="main-container">
+        <div class="login-card">
+            <div class="login-logo-container">
+                <img src="{{ url_for('static', filename='images/md57logo.jpg') }}" alt="MD57 Logo">
+            </div>
+            <h2>Create Account</h2>
+            <p class="subtitle">Register for Online Booking</p>
+
+            <div class="stepper">
+                <div class="stepper-step active" data-step="1">
+                    <div class="stepper-circle">1</div>
+                    <div class="stepper-label">Identity</div>
+                </div>
+                <div class="stepper-line"></div>
+                <div class="stepper-step" data-step="2">
+                    <div class="stepper-circle">2</div>
+                    <div class="stepper-label">Security</div>
+                </div>
+            </div>
+
+            <form id="registerForm" method="POST" action="/register">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+                <div id="stepValidationError" class="error" style="display:none;"></div>
+
+                <div class="form-step" data-step="1">
+                    <div class="form-group">
+                        <label>Full Name</label>
+                        <input type="text" name="fullname" id="reg_name" placeholder="Enter your full name" required autocomplete="name">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Email Address</label>
+                        <input type="email" name="email" id="reg_email" placeholder="Enter your email" required autocomplete="email">
+                    </div>
+
+                    <div class="stepper-nav">
+                        <button type="button" class="stepper-next-btn">Next</button>
+                    </div>
+                </div>
+
+                <div class="form-step" data-step="2" style="display:none;">
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" name="password" id="reg_pass" placeholder="Create a password" minlength="6" required autocomplete="new-password" oninput="checkPasswordsMatch()">
+                            <button type="button" class="toggle-password" id="togglePassBtn" onclick="togglePasswordVisibility('reg_pass', 'iconPass')">
+                                <svg id="iconPass" viewBox="0 0 24 24">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Confirm Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" name="confirm_password" id="reg_confirm" placeholder="Confirm your password" required autocomplete="new-password" oninput="checkPasswordsMatch()">
+                            <button type="button" class="toggle-password" id="toggleConfirmBtn" onclick="togglePasswordVisibility('reg_confirm', 'iconConfirm')">
+                                <svg id="iconConfirm" viewBox="0 0 24 24">
+                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="stepper-nav">
+                        <button type="button" class="stepper-back-btn">Back</button>
+                        <button type="submit">Register Account</button>
+                    </div>
+                </div>
+            </form>
+
+            <div class="auth-divider">or</div>
+
+            <!-- Google Sign-In Button -->
+            <a href="/auth/google" class="google-btn">
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"/>
+                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.13 0-5.78-2.11-6.73-4.96H1.18v3.15C3.15 21.32 7.23 24 12 24z"/>
+                    <path fill="#FBBC05" d="M5.27 14.24c-.25-.72-.38-1.49-.38-2.24s.13-1.52.38-2.24V6.6H1.18C.43 8.12 0 9.82 0 12s.43 3.88 1.18 5.4l4.09-3.16z"/>
+                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.23 0 3.15 2.68 1.18 6.6l4.09 3.15c.95-2.85 3.6-4.96 6.73-4.96z"/>
+                </svg>
+                Sign up with Google
+            </a>
+
+            {% if error %}
+            <div id="registerError" class="error">
+                <i class="fa-solid fa-triangle-exclamation"></i> {{ error }}
+            </div>
+            {% endif %}
+
+            <div class="nav-links">
+                <a href="/login" class="register-link">&larr; Already have an account? Sign In</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="aboutModal" class="floating-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('aboutModal')">&times;</span>
+            <h3><i class="fa-solid fa-circle-info"></i> About System</h3>
+            <p><strong>MD57 Car Wash & Auto Detailing</strong></p>
+            <p>Welcome to MD57 Car Wash, where we combine premium care with cutting-edge convenience through our automated Queueing Machine system designed to get you back on the road faster.</p>
+        </div>
+    </div>
+
+    <div id="contactModal" class="floating-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('contactModal')">&times;</span>
+            <h3><i class="fa-solid fa-phone"></i> Contacts</h3>
+            <p><strong>MD57 Car Wash Support</strong></p>
+            <p>Phone: 0966 150 2959</p>
+            <p>Email: md57carwash@gmail.com</p>
+            
+            <div class="social-links">
+                <a href="https://www.instagram.com/md57carwash?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" class="social-btn">Instagram</a>
+                <a href="https://www.tiktok.com/@md57carwash?is_from_webapp=1&sender_device=pc" target="_blank" class="social-btn">TikTok</a>
+                <a href="https://facebook.com/MD57CarwashAndAutoDetailing" target="_blank" class="social-btn">Facebook</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="locationModal" class="floating-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('locationModal')">&times;</span>
+            <h3><i class="fa-solid fa-location-dot"></i> Location</h3>
+            <p><strong>MD57 Car Wash & Auto Detailing</strong></p>
+            <p>7th Avenue D. Aquino St. West Grace Park Caloocan</p>
+            <a href="https://www.google.com/maps/search/?api=1&query=7th+Avenue+D.+Aquino+St.+West+Grace+Park+Caloocan" target="_blank" class="map-link-btn">
+<i class="fa-solid fa-map-location-dot"></i> Open in Google Maps
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function toggleTheme() {
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const next = isDark ? 'light' : 'dark';
+            if (next === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+            }
+            try { localStorage.setItem('md57_theme', next); } catch (e) {}
+            syncThemeToggleIcon();
+        }
+
+        function syncThemeToggleIcon() {
+            const icon = document.getElementById('themeToggleIcon');
+            if (!icon) return;
+            const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+            icon.className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+        }
+
+        document.addEventListener('DOMContentLoaded', syncThemeToggleIcon);
+
+        function openModal(modalId) {
+            document.getElementById(modalId).style.display = 'flex';
+        }
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+        window.onclick = function(event) {
+            if (event.target.classList.contains('floating-modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // Minimal inline multi-step navigator - same shape as
+        // common.js's initStepper() used on booking.html/create_user.html,
+        // duplicated here since this standalone page doesn't load
+        // common.js (same reason toggleTheme() above is its own copy).
+        function initRegisterStepper() {
+            const formEl = document.getElementById('registerForm');
+            const totalSteps = 2;
+            let current = 1;
+
+            function showError(msg) {
+                const el = document.getElementById('stepValidationError');
+                el.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${msg}`;
+                el.style.display = 'block';
+            }
+            function clearError() {
+                document.getElementById('stepValidationError').style.display = 'none';
+            }
+
+            function render() {
+                formEl.querySelectorAll('.form-step').forEach(el => {
+                    el.style.display = (parseInt(el.dataset.step, 10) === current) ? '' : 'none';
+                });
+                document.querySelectorAll('.stepper-step').forEach(el => {
+                    const n = parseInt(el.dataset.step, 10);
+                    el.classList.toggle('active', n === current);
+                    el.classList.toggle('completed', n < current);
+                });
+            }
+
+            function validate(step) {
+                if (step === 1) {
+                    const name = document.getElementById('reg_name').value.trim();
+                    const email = document.getElementById('reg_email').value.trim();
+                    if (!name) { showError('Please enter your full name.'); return false; }
+                    if (!email || !email.includes('@')) { showError('Please enter a valid email address.'); return false; }
+                }
+                clearError();
+                return true;
+            }
+
+            formEl.querySelectorAll('.stepper-next-btn').forEach(b => b.addEventListener('click', () => {
+                if (!validate(current)) return;
+                if (current < totalSteps) { current++; render(); }
+            }));
+            formEl.querySelectorAll('.stepper-back-btn').forEach(b => b.addEventListener('click', () => {
+                clearError();
+                if (current > 1) { current--; render(); }
+            }));
+
+            render();
+        }
+        document.addEventListener('DOMContentLoaded', initRegisterStepper);
+
+        function checkPasswordsMatch() {
+            const pass = document.getElementById('reg_pass');
+            const confirm = document.getElementById('reg_confirm');
+            confirm.setCustomValidity(confirm.value && confirm.value !== pass.value ? 'Passwords do not match.' : '');
+        }
+
+        function togglePasswordVisibility(fieldId, iconId) {
+            const passInput = document.getElementById(fieldId);
+            const svgIcon = document.getElementById(iconId);
+
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                svgIcon.innerHTML = `
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                `;
+            } else {
+                passInput.type = 'password';
+                svgIcon.innerHTML = `
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

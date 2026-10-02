@@ -1,0 +1,767 @@
+{% extends "base.html" %}
+{% block page_comment %}Homepage{% endblock %}
+{% block title %}MD57 Car Wash & Auto Detailing - Main Portal{% endblock %}
+
+{% block extra_style %}
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 25px 16px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            animation: smoothFadeIn 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .main-container h2 {
+            font-size: 22px;
+            margin-bottom: 8px;
+            color: var(--text-bright);
+            line-height: 1.3;
+            font-weight: 800;
+        }
+        .main-container > p {
+            font-size: 12px;
+            color: var(--text-muted);
+            max-width: 650px;
+            margin-bottom: 24px;
+            padding: 0 10px;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+
+        /* Real KPI strip (admin/staff only) - the 4 numbers a shop
+           owner/staff member actually checks first, shown before any
+           navigation card. Same stat-card look as admin-dashboard.html for
+           visual consistency across the two pages that show it. */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px;
+            width: 100%;
+            max-width: 980px;
+            margin: 0 0 22px 0;
+            text-align: left;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            padding: 16px 18px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 4px; height: 100%;
+            background: var(--accent-amber);
+        }
+        .stat-card.completed::after { background: var(--accent-green); }
+        .stat-card.staffed::after { background: #2563eb; }
+        .stat-card h4 {
+            margin: 0;
+            color: var(--text-muted);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+        .stat-card .value {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-bright);
+            margin: 6px 0 0 0;
+        }
+        .stat-card .value small {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+        .stat-card.completed .value { color: var(--accent-green); }
+        .stat-card.staffed .value { color: #2563eb; }
+
+        .cards-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            width: 100%;
+            max-width: 980px;
+            justify-content: center;
+            padding: 0 10px;
+        }
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px 16px;
+            border-radius: 12px;
+            text-align: center;
+            text-decoration: none;
+            color: var(--text-main);
+            transition: all 0.25s ease;
+            cursor: pointer;
+            flex: 1 1 250px;
+            max-width: 300px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            outline: none !important;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -4px rgba(0, 0, 0, 0.05);
+        }
+        .card:hover {
+            border-color: var(--accent-amber);
+            box-shadow: 0 20px 25px -5px rgba(156, 122, 46, 0.12), 0 8px 10px -6px rgba(156, 122, 46, 0.1);
+            transform: translateY(-4px);
+        }
+        .card h3 {
+            margin: 8px 0 4px 0;
+            color: var(--text-bright);
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .card p {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin: 0;
+            line-height: 1.4;
+        }
+        .icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+            color: var(--accent-amber);
+        }
+
+        .floating-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 23, 42, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+        .modal-content {
+            background: var(--card-bg);
+            color: var(--text-bright);
+            padding: 24px 20px;
+            border-radius: 14px;
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border: 1px solid var(--border-color);
+            text-align: center;
+        }
+        .modal-content h3 {
+            margin-top: 0;
+            font-size: 18px;
+            color: var(--accent-amber);
+        }
+        .modal-content p {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 14px;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--text-muted);
+            padding: 4px;
+            transition: color 0.2s;
+        }
+        .close-btn:hover {
+            color: var(--text-bright);
+        }
+
+        .calendar-modal-content {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 18px 14px;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 680px;
+            box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+            text-align: left;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .picker-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text-bright);
+        }
+        .picker-nav-btn {
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .picker-nav-btn:hover {
+            background: #e2e8f0;
+            color: var(--text-bright);
+        }
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+        .day-header-cell {
+            font-size: 10px;
+            color: var(--text-muted);
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .day-cell {
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 2px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 36px;
+        }
+        .day-cell span {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-bright);
+        }
+        .day-cell:hover {
+            border-color: var(--accent-amber);
+            background: var(--accent-amber-glow);
+        }
+        .day-cell.selected {
+            background: var(--accent-amber);
+            border-color: var(--accent-amber);
+            color: #ffffff;
+        }
+        .day-cell.selected span {
+            color: #ffffff;
+        }
+        .day-cell.has-bookings {
+            border-color: rgba(22, 163, 74, 0.5);
+            background: rgba(22, 163, 74, 0.08);
+        }
+        .day-cell.disabled {
+            background: var(--bg-light);
+            border-color: #e2e8f0;
+            cursor: not-allowed;
+            opacity: 0.4;
+        }
+        .day-cell.disabled span {
+            color: #94a3b8;
+        }
+
+        .time-slots-table-container {
+            margin-top: 10px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 10px;
+        }
+        .time-slots-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin-top: 6px;
+        }
+        .time-slot-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            font-size: 10px;
+        }
+        .slot-time-text {
+            font-weight: 700;
+            color: var(--text-bright);
+            margin-bottom: 2px;
+            font-size: 11px;
+        }
+        .slot-status-available { color: var(--accent-green); font-weight: 600; font-size: 9px; }
+        .slot-status-occupied { color: var(--accent-red); font-weight: 600; font-size: 9px; }
+        .slot-status-disabled { color: #94a3b8; font-weight: 600; font-style: italic; font-size: 9px; }
+
+
+        .social-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 14px;
+        }
+        .social-btn {
+            background: var(--bg-light);
+            color: var(--text-main);
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        .social-btn:hover {
+            border-color: var(--accent-amber);
+            background: var(--accent-amber-glow);
+            color: var(--accent-amber);
+        }
+
+        @media (max-width: 900px) {
+            .card {
+                flex-basis: calc(50% - 16px);
+                max-width: calc(50% - 16px);
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 600px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                padding: 20px 12px;
+            }
+
+            .main-container h2 {
+                font-size: 18px;
+            }
+
+            .main-container > p {
+                font-size: 11px;
+                margin-bottom: 18px;
+            }
+
+            .cards-grid {
+                gap: 12px !important;
+                padding: 0 4px;
+            }
+
+            .card {
+                flex-basis: 100%;
+                max-width: none;
+                padding: 16px 12px;
+                flex-direction: row;
+                text-align: left;
+                gap: 14px;
+                align-items: center;
+            }
+
+            .card .icon {
+                font-size: 26px;
+                margin-bottom: 0;
+                flex-shrink: 0;
+            }
+
+            .card-content-wrap {
+                display: flex;
+                flex-direction: column;
+            }
+
+            .card h3 {
+                margin: 0 0 2px 0;
+                font-size: 14px;
+            }
+
+            .card p {
+                font-size: 11px;
+            }
+
+            .time-slots-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .calendar-modal-content {
+                padding: 14px 10px;
+            }
+        }
+{% endblock %}
+
+{% block content %}
+            <h2>AI-Driven Workforce & Queue System</h2>
+            <p>Monitor the live queue, book a service, and check our calendar availability easily.</p>
+
+            <!-- Real-time KPI strip (admin/staff only) - the numbers a shop
+                 owner/staff member checks first, above the navigation
+                 cards. Same /api/admin/metrics data admin-dashboard.html
+                 uses, so the two pages never disagree. -->
+            {% if session.get('role') in ['admin', 'staff'] %}
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h4>Current Queue Length</h4>
+                    <p class="value" id="home-queue-count">--</p>
+                </div>
+                <div class="stat-card completed">
+                    <h4>Completed Today</h4>
+                    <p class="value" id="home-completed-today">--</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Avg Wait Today</h4>
+                    <p class="value" id="home-avg-wait-today">--</p>
+                </div>
+                <div class="stat-card staffed">
+                    <h4>Active Staff</h4>
+                    <p class="value" id="home-active-staff">--</p>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="cards-grid">
+                <!-- Queue Status Box -->
+                <a href="/queue" class="card">
+                    <div class="icon"><i class="fa-solid fa-chart-simple"></i></div>
+                    <div class="card-content-wrap">
+                        <h3>Queue Status</h3>
+                        <p>View the live queue and estimated wait time.</p>
+                    </div>
+                </a>
+
+                <!-- Book Service Box -->
+                <a href="/book" class="card">
+                    <div class="icon"><i class="fa-solid fa-car"></i></div>
+                    <div class="card-content-wrap">
+                        <h3>Book Service</h3>
+                        <p>Schedule a car wash or detailing appointment.</p>
+                    </div>
+                </a>
+
+                <!-- View Future Schedule / Calendar Box -->
+                <div onclick="openModal('calendarModal')" class="card">
+                    <div class="icon"><i class="fa-solid fa-calendar-days"></i></div>
+                    <div class="card-content-wrap">
+                        <h3>Calendar Schedule</h3>
+                        <p>See how busy upcoming time slots are, and which are full.</p>
+                    </div>
+                </div>
+
+                <!-- Car Ready Box (Admin/Staff Only - /ready is role-gated,
+                     a customer clicking this would just bounce back here) -->
+                {% if session.get('role') in ['admin', 'staff'] %}
+                <a href="/ready" class="card">
+                    <div class="icon"><i class="fa-solid fa-circle-check"></i></div>
+                    <div class="card-content-wrap">
+                        <h3>Car Ready</h3>
+                        <p>Check completed vehicles ready for pickup.</p>
+                    </div>
+                </a>
+                {% endif %}
+
+                <!-- Manager Analytics Box (Admin Only) -->
+                {% if session.get('role') == 'admin' %}
+                <a href="/analytics" class="card">
+                    <div class="icon"><i class="fa-solid fa-chart-line"></i></div>
+                    <div class="card-content-wrap">
+                        <h3>Manager Analytics</h3>
+                        <p>View system reports, queue trends, and performance insights.</p>
+                    </div>
+                </a>
+                {% endif %}
+
+                <!-- Contacts Box -->
+                <div onclick="openModal('contactModal')" class="card">
+                    <div class="icon"><i class="fa-solid fa-phone"></i></div>
+                    <div class="card-content-wrap">
+                        <h3>Contacts</h3>
+                        <p>Get in touch with us for any inquiries.</p>
+                    </div>
+                </div>
+
+                <!-- Location Box - opens the shop's real address directly in
+                     Google Maps in a new tab, instead of an in-page modal. -->
+                <a href="https://www.google.com/maps/search/?api=1&query=MD57%20Car%20Wash%20%26%20Auto%20Detailing%2C%207th%20Avenue%20D.%20Aquino%20St.%20West%20Grace%20Park%20Caloocan" target="_blank" rel="noopener noreferrer" class="card">
+                    <div class="icon"><i class="fa-solid fa-location-dot"></i></div>
+                    <div class="card-content-wrap">
+                        <h3>Location</h3>
+                        <p>Find our location and get directions to our shop.</p>
+                    </div>
+                </a>
+            </div>
+{% endblock %}
+
+{% block modals %}
+    <!-- LOGOUT ANIMATION MODAL OVERLAY -->
+    <div id="logoutAnimationModal">
+        <div class="logout-animation-card">
+            <div class="logout-icon-animated"><i class="fa-solid fa-car"></i> <i class="fa-solid fa-house"></i></div>
+            <h3>Signing Out...</h3>
+            <p>Thank you for choosing our Car Wash. God Bless You!!</p>
+        </div>
+    </div>
+
+    <!-- Floating Modal: Future Calendar Schedule Viewer -->
+    <div id="calendarModal" class="floating-modal">
+        <div class="calendar-modal-content">
+            <span class="close-btn" onclick="closeModal('calendarModal')">&times;</span>
+            <div class="picker-header">
+                <button type="button" class="picker-nav-btn" onclick="changeHomeCalendarMonth(-1)">&#10094; Prev</button>
+                <span id="home-picker-month-year" style="color: var(--accent-amber); font-size: 14px;">September 2026</span>
+                <button type="button" class="picker-nav-btn" onclick="changeHomeCalendarMonth(1)">Next &#10095;</button>
+            </div>
+
+            <div class="days-grid">
+                <div class="day-header-cell">Sun</div>
+                <div class="day-header-cell">Mon</div>
+                <div class="day-header-cell">Tue</div>
+                <div class="day-header-cell">Wed</div>
+                <div class="day-header-cell">Thu</div>
+                <div class="day-header-cell">Fri</div>
+                <div class="day-header-cell">Sat</div>
+            </div>
+
+            <div class="days-grid" id="home-calendar-days-container"></div>
+
+            <div class="time-slots-table-container">
+                <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">
+                    Time Slots for <span id="selected-date-label" style="color: var(--accent-amber);">Select a date</span>:
+                </div>
+
+                <div class="time-slots-grid" id="home-time-slots-preview">
+                    <div style="grid-column: span 4; text-align: center; color: var(--text-muted); font-size: 10px; padding: 12px;">Click an available date above to view all time slots.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Modal: Contacts -->
+    <div id="contactModal" class="floating-modal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal('contactModal')">&times;</span>
+            <h3><i class="fa-solid fa-phone" style="color: var(--accent-amber);"></i> Contacts</h3>
+            <p><strong>MD57 Car Wash Support</strong></p>
+            <p>Phone: 0966 150 2959</p>
+            <p>Email: md57carwash@gmail.com</p>
+
+            <div class="social-links">
+                <a href="https://www.instagram.com/md57carwash?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==" target="_blank" class="social-btn">Instagram</a>
+                <a href="https://www.tiktok.com/@md57carwash?is_from_webapp=1&sender_device=pc" target="_blank" class="social-btn">TikTok</a>
+                <a href="https://facebook.com/MD57CarwashAndAutoDetailing" target="_blank" class="social-btn">Facebook</a>
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    let homeCalendarView = new Date();
+    let activeSelectedDateStr = "";
+
+    // KPI strip (admin/staff only) - same /api/admin/metrics numbers as
+    // admin-dashboard.html (see common.js's loadKpiStrip).
+    document.addEventListener('DOMContentLoaded', () => {
+        if (CURRENT_USER.role !== 'admin' && CURRENT_USER.role !== 'staff') return;
+        loadKpiStrip('home').catch(err => console.error('Failed to load KPI strip:', err));
+        onLiveUpdate(() => loadKpiStrip('home').catch(() => {}));
+    });
+
+    // This page's modals are display-toggled (.floating-modal), not the
+    // classList-based .modal-overlay system common.js's default
+    // window.onclick handles - so it needs its own click-outside handler.
+    // No more nav-dropdown-closing logic here - the "Menu" dropdown is
+    // gone entirely, replaced by the always-visible sidebar.
+    window.onclick = function(event) {
+        if (event.target.classList.contains('floating-modal')) {
+            event.target.style.display = 'none';
+        }
+    }
+
+    function openModal(modalId) {
+        document.getElementById(modalId).style.display = 'flex';
+        if (modalId === 'calendarModal') {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth();
+            const day = today.getDate();
+
+            let formattedMonth = String(month + 1).padStart(2, '0');
+            let formattedDay = String(day).padStart(2, '0');
+            activeSelectedDateStr = `${year}-${formattedMonth}-${formattedDay}`;
+
+            renderHomeCalendar();
+            loadTimeSlotsForDate(year, month, day);
+        }
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    // Per-bay booking counts per hourly slot (and the per-bay capacity) -
+    // for one date, or every day from today on.
+    let slotCapacity = Infinity;
+
+    async function fetchBookedSlots(dateStr) {
+        try {
+            const url = dateStr ? `/api/booked-slots?date=${encodeURIComponent(dateStr)}` : '/api/booked-slots';
+            const res = await fetch(url);
+            const data = await res.json();
+            if (data.status === 'success') {
+                slotCapacity = data.capacity;
+                return data.data;
+            }
+            return [];
+        } catch (e) {
+            console.error('Failed to load booked slots:', e);
+            return [];
+        }
+    }
+
+    async function renderHomeCalendar() {
+        const year = homeCalendarView.getFullYear();
+        const month = homeCalendarView.getMonth();
+
+        const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+        document.getElementById('home-picker-month-year').innerText = `${monthNames[month]} ${year}`;
+
+        const firstDayIndex = new Date(year, month, 1).getDay();
+        const totalDays = new Date(year, month + 1, 0).getDate();
+
+        let daysContainer = document.getElementById('home-calendar-days-container');
+        daysContainer.innerHTML = '';
+
+        for (let i = 0; i < firstDayIndex; i++) {
+            let emptyCell = document.createElement('div');
+            daysContainer.appendChild(emptyCell);
+        }
+
+        // Real booking data from the server (only active reservations are
+        // returned, so no client-side status filtering is needed here).
+        const allBookedItems = await fetchBookedSlots();
+
+        const todayObj = new Date();
+        const currentYear = todayObj.getFullYear();
+        const currentMonth = todayObj.getMonth();
+        const currentDay = todayObj.getDate();
+
+        for (let day = 1; day <= totalDays; day++) {
+            let dayCell = document.createElement('div');
+            dayCell.className = 'day-cell';
+
+            let formattedMonth = String(month + 1).padStart(2, '0');
+            let formattedDay = String(day).padStart(2, '0');
+            let dateStringFull = `${year}-${formattedMonth}-${formattedDay}`;
+
+            let cellDate = new Date(year, month, day);
+            let todayDateOnly = new Date(currentYear, currentMonth, currentDay);
+            let isPastDate = cellDate < todayDateOnly;
+
+            if (isPastDate) {
+                dayCell.classList.add('disabled');
+            } else {
+                const hasBookingsOnThisDay = allBookedItems.some(item => item.booking_date === dateStringFull);
+
+                if (hasBookingsOnThisDay) {
+                    dayCell.classList.add('has-bookings');
+                }
+
+                dayCell.onclick = () => selectHomeCalendarDate(year, month, day, dayCell);
+            }
+
+            dayCell.innerHTML = `<span>${day}</span>`;
+
+            if (dateStringFull === activeSelectedDateStr) {
+                dayCell.classList.add('selected');
+            }
+
+            daysContainer.appendChild(dayCell);
+        }
+    }
+
+    function changeHomeCalendarMonth(direction) {
+        homeCalendarView.setMonth(homeCalendarView.getMonth() + direction);
+        renderHomeCalendar();
+    }
+
+    function selectHomeCalendarDate(year, month, day, element) {
+        let formattedMonth = String(month + 1).padStart(2, '0');
+        let formattedDay = String(day).padStart(2, '0');
+        activeSelectedDateStr = `${year}-${formattedMonth}-${formattedDay}`;
+
+        document.querySelectorAll('#home-calendar-days-container .day-cell').forEach(cell => cell.classList.remove('selected'));
+        if (element) {
+            element.classList.add('selected');
+        }
+
+        loadTimeSlotsForDate(year, month, day);
+    }
+
+    async function loadTimeSlotsForDate(year, month, day) {
+        document.getElementById('selected-date-label').innerText = activeSelectedDateStr;
+
+        const slotsContainer = document.getElementById('home-time-slots-preview');
+        slotsContainer.innerHTML = '';
+
+        // Real booking data for this specific date from the server.
+        const allBookedItems = await fetchBookedSlots(activeSelectedDateStr);
+
+        const now = new Date();
+        const isToday = (year === now.getFullYear() && month === now.getMonth() && day === now.getDate());
+        const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+        BOOKING_TIME_SLOTS.forEach(timeStr => {
+            let slotCard = document.createElement('div');
+            slotCard.className = 'time-slot-card';
+
+            if (isToday && slotTimeToMinutes(timeStr) <= nowMinutes) {
+                slotCard.innerHTML = `<span class="slot-time-text">${timeStr}</span><span class="slot-status-disabled">Passed</span>`;
+            } else {
+                // Bookings don't block each other (first-come-first-served
+                // queue) - a slot is only "Full" once every bay has reached
+                // its per-hour capacity.
+                const atThisTime = allBookedItems.filter(item =>
+                    item.booking_date === activeSelectedDateStr && item.booking_time === timeStr
+                );
+                const booked = atThisTime.reduce((sum, item) => sum + item.count, 0);
+                const fullBays = atThisTime.filter(item => item.count >= slotCapacity).length;
+
+                if (fullBays >= 3) {
+                    slotCard.innerHTML = `<span class="slot-time-text">${timeStr}</span><span class="slot-status-occupied">Full</span>`;
+                } else if (booked > 0) {
+                    slotCard.innerHTML = `<span class="slot-time-text">${timeStr}</span><span class="slot-status-available">${booked} booked</span>`;
+                } else {
+                    slotCard.innerHTML = `<span class="slot-time-text">${timeStr}</span><span class="slot-status-available">Available</span>`;
+                }
+            }
+
+            slotsContainer.appendChild(slotCard);
+        });
+    }
+
+</script>
+{% endblock %}
